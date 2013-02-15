@@ -35,6 +35,7 @@ import android.util.TypedValue;
 
 public class Constants {
     public static final String BASE_URL = "http://forums.somethingawful.com";
+    public static final String BASE_URL_DEV = "http://dev.forums.somethingawful.com";
 
     public static final String FUNCTION_LOGIN           = BASE_URL + "/account.php";
     public static final String FUNCTION_BOOKMARK        = BASE_URL + "/bookmarkthreads.php";
@@ -74,6 +75,7 @@ public class Constants {
 	public static final String PARAM_PRIVATE_MESSAGE_ID = "privatemessageid";
 	public static final String PARAM_VOTE 	   = "vote";
 	public static final String PARAM_POST_ID   = "postid";
+	public static final String PARAM_JSON	   = "json";
 	
 	public static final String VALUE_POST 	   = "post";
 	public static final String VALUE_NEWPOST   = "newpost";

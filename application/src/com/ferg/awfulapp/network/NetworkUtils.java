@@ -27,8 +27,10 @@
 
 package com.ferg.awfulapp.network;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -63,6 +65,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -255,6 +258,10 @@ public class NetworkUtils {
         return get(new URI(aUrl + getQueryStringParameters(aParams)), statusCallback, midpointPercent);
 	}
 	
+	public static JSONObject getJson(String aUrl, HashMap<String, String> aParams, Messenger statusCallback, int midpointPercent) throws Exception {
+        return getJson(new URI(aUrl + getQueryStringParameters(aParams)), statusCallback, midpointPercent);
+	}
+	
 	public static Document get(URI location, Messenger statusCallback, int midpointPercent) throws Exception {
 		Document response = null;
         Log.i(TAG, "Fetching " + location);
@@ -276,6 +283,38 @@ public class NetworkUtils {
         	InputStream entityStream = entity.getContent();
         	response = Jsoup.parse(entityStream, CHARSET, Constants.BASE_URL);
         	entityStream.close();
+        }
+        
+        Log.i(TAG, "Fetched " + location);
+        return response;
+	}
+	
+	public static JSONObject getJson(URI location, Messenger statusCallback, int midpointPercent) throws Exception {
+		JSONObject response = null;
+        Log.i(TAG, "Fetching " + location);
+
+        HttpGet httpGet;
+        HttpResponse httpResponse;
+        URI jsonLocation = new URI((location.toString().replace(Constants.BASE_URL, Constants.BASE_URL_DEV))+"&"+Constants.PARAM_JSON+"=1");
+        httpGet = new HttpGet(jsonLocation);
+        httpResponse = sHttpClient.execute(httpGet);
+
+        HttpEntity entity = httpResponse.getEntity();
+
+        if(statusCallback != null){
+	        //notify user we have gotten message body
+	        statusCallback.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, 0, midpointPercent));
+        }
+	    
+        if (entity != null) {
+        	StringBuilder builder = new StringBuilder();
+        	InputStream entityStream = entity.getContent();
+        	BufferedReader reader = new BufferedReader(new InputStreamReader(entityStream));
+            String line;
+            while ((line = reader.readLine()) != null) {
+              builder.append(line);
+            }
+        	response = new JSONObject(builder.toString());
         }
         
         Log.i(TAG, "Fetched " + location);
