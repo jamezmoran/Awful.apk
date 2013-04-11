@@ -29,6 +29,7 @@ package com.ferg.awfulapp.reply;
 
 import java.util.HashMap;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
@@ -119,7 +120,7 @@ public class Reply {
         HashMap<String, String> params = new HashMap<String, String>();
         params.put(PARAM_ACTION, "newreply");
         params.put(PARAM_THREADID, Integer.toString(threadId));
-        Document response = NetworkUtils.get(Constants.FUNCTION_POST_REPLY, params);
+        JSONObject response = NetworkUtils.get(Constants.FUNCTION_POST_REPLY, params);
         getReplyData(response, newReply);
         
     	return newReply;
@@ -132,7 +133,7 @@ public class Reply {
         HashMap<String, String> params = new HashMap<String, String>();
         params.put(PARAM_ACTION, "newreply");
         params.put(PARAM_POSTID, Integer.toString(postId));
-        Document response = NetworkUtils.get(Constants.FUNCTION_POST_REPLY, params);
+        JSONObject response = NetworkUtils.get(Constants.FUNCTION_POST_REPLY, params);
         getReplyData(response, quote);
         quote.put(AwfulMessage.REPLY_CONTENT, getMessageContent(response));
         quote.put(AwfulPost.REPLY_ORIGINAL_CONTENT, quote.getAsString(AwfulMessage.REPLY_CONTENT));
@@ -146,21 +147,21 @@ public class Reply {
         HashMap<String, String> params = new HashMap<String, String>();
         params.put(PARAM_ACTION, "editpost");
         params.put(PARAM_POSTID, Integer.toString(postId));
-        Document response = NetworkUtils.get(Constants.FUNCTION_EDIT_POST, params);
+        JSONObject response = NetworkUtils.get(Constants.FUNCTION_EDIT_POST, params);
         edit.put(AwfulMessage.REPLY_CONTENT, getMessageContent(response));
         edit.put(AwfulPost.REPLY_ORIGINAL_CONTENT, edit.getAsString(AwfulMessage.REPLY_CONTENT));
         edit.put(AwfulPost.EDIT_POST_ID, postId);
     	return edit;
     }
     
-    public static final String getMessageContent(Document data) throws Exception{
-    	Element formContent = data.getElementsByAttributeValue("name", "message").first();
+    public static final String getMessageContent(JSONObject response) throws Exception{
+    	Element formContent = response.getElementsByAttributeValue("name", "message").first();
         return formContent.text().trim();
     }
 
-    public static final ContentValues getReplyData(Document data, ContentValues results) throws Exception {
-    	Element formKey = data.getElementsByAttributeValue("name", "formkey").first();
-    	Element formCookie = data.getElementsByAttributeValue("name", "form_cookie").first();
+    public static final ContentValues getReplyData(JSONObject response, ContentValues results) throws Exception {
+    	Element formKey = response.getElementsByAttributeValue("name", "formkey").first();
+    	Element formCookie = response.getElementsByAttributeValue("name", "form_cookie").first();
     	results.put(AwfulPost.FORM_KEY, formKey.val());
     	results.put(AwfulPost.FORM_COOKIE, formCookie.val());
         return results;

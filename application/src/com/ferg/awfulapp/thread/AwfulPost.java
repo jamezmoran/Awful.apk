@@ -274,14 +274,14 @@ public class AwfulPost {
         return result;
     }
     
-    private static Document convertVideos(Document contentNode){
-    	for(Element node : contentNode.getElementsByClass("youtube-player")){
+    private static JSONObject convertVideos(JSONObject response){
+    	for(Element node : response.getElementsByClass("youtube-player")){
     		node.replaceWith(new Element(Tag.valueOf("a"),"").attr("href", node.attr("src").replace("youtube-nocookie.com", "youtube.com")).text(node.attr("src").replace("youtube-nocookie.com", "youtube.com")));
     	}
-    	for(Element node : contentNode.getElementsByClass("bbcode_video")){
+    	for(Element node : response.getElementsByClass("bbcode_video")){
     		node.replaceWith(new Element(Tag.valueOf("p"),"").text(node.attr("DEBUG: DISABLED VIDEO CONVERSION")));//TODO
     	}
-    	return contentNode;
+    	return response;
     }
 /*
 	private static TagNode convertVideos(TagNode contentNode) {
@@ -424,23 +424,23 @@ public class AwfulPost {
         }
     }
 
-    public static void syncPosts(ContentResolver content, Document aThread, int aThreadId, int unreadIndex, int opId, AwfulPreferences prefs, int startIndex){
-        ArrayList<ContentValues> result = AwfulPost.parsePosts(aThread, aThreadId, unreadIndex, opId, prefs, startIndex);
+    public static void syncPosts(ContentResolver content, JSONObject response, int aThreadId, int unreadIndex, int opId, AwfulPreferences prefs, int startIndex){
+        ArrayList<ContentValues> result = AwfulPost.parsePosts(response, aThreadId, unreadIndex, opId, prefs, startIndex);
 
         int resultCount = content.bulkInsert(CONTENT_URI, result.toArray(new ContentValues[result.size()]));
         Log.i(TAG, "Inserted "+resultCount+" posts into DB, threadId:"+aThreadId+" unreadIndex: "+unreadIndex);
     }
     
-    public static ArrayList<ContentValues> parsePosts(Document aThread, int aThreadId, int unreadIndex, int opId, AwfulPreferences prefs, int startIndex){
+    public static ArrayList<ContentValues> parsePosts(JSONObject response, int aThreadId, int unreadIndex, int opId, AwfulPreferences prefs, int startIndex){
     	ArrayList<ContentValues> result = new ArrayList<ContentValues>();
     	boolean lastReadFound = false;
 		int index = startIndex;
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
         Log.v(TAG,"Update time: "+update_time);
         if(!Constants.isICS() || !prefs.inlineYoutube) {
-        	convertVideos(aThread);
+        	convertVideos(response);
         }
-        Elements posts = aThread.getElementsByClass("post");
+        Elements posts = response.getElementsByClass("post");
         for(Element postData : posts){
         	ContentValues post = new ContentValues();
         	post.put(THREAD_ID, aThreadId);

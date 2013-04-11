@@ -30,6 +30,7 @@ package com.ferg.awfulapp.thread;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -47,16 +48,16 @@ public abstract class AwfulPagedItem {
     
 	private static final Pattern pageNumber_regex = Pattern.compile("Pages \\((\\d+)\\)");
 	
-    public static int parseLastPage(Document pagedItem){
+    public static int parseLastPage(JSONObject response){
     	int pagesTop, pagesBottom;
     	try{
-    		Elements pages = pagedItem.getElementsByClass("pages");
+    		Elements pages = response.getElementsByClass("pages");
     		pagesTop = Integer.parseInt(pages.first().getElementsByTag("a").last().html().replaceAll("[^\\d.]", ""));
     	   	pagesBottom = Integer.parseInt(pages.last().getElementsByTag("a").last().html().replaceAll("[^\\d.]", ""));
        	}catch(NumberFormatException ex){
        		Log.e(TAG, "NumberFormatException thrown while parseLastPage");
        		try{
-	    		Elements pages = pagedItem.getElementsByClass("pages");
+	    		Elements pages = response.getElementsByClass("pages");
 	    		pagesTop = Integer.parseInt(pages.first().getElementsByTag("span").last().html().replaceAll("[^\\d.]", ""));
 	    	   	pagesBottom = Integer.parseInt(pages.last().getElementsByTag("span").last().html().replaceAll("[^\\d.]", ""));
 	       	}catch(NullPointerException exB){

@@ -30,6 +30,7 @@ package com.ferg.awfulapp.thread;
 import java.util.ArrayList;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -114,7 +115,7 @@ public class AwfulMessage extends AwfulPagedItem {
 		return current;
 	}
 	
-	public static void processMessageList(ContentResolver contentInterface, Document data) throws Exception{
+	public static void processMessageList(ContentResolver contentInterface, JSONObject pmData) throws Exception{
 		ArrayList<ContentValues> msgList = new ArrayList<ContentValues>();
 		
 		/**METHOD One: Parse PM links. Easy, but only contains id+title.**/
@@ -136,7 +137,7 @@ public class AwfulMessage extends AwfulPagedItem {
 		}*/
 		
 		/**METHOD Two: Parse table structure, hard and quick to break.**/
-		Elements messagesParent = data.getElementsByAttributeValue("name", "form");
+		Elements messagesParent = pmData.getElementsByAttributeValue("name", "form");
 		if(messagesParent.size() > 0){
 			Elements messages = messagesParent.first().getElementsByTag("tr");
 			for(Element msg : messages){
@@ -175,22 +176,22 @@ public class AwfulMessage extends AwfulPagedItem {
 		contentInterface.bulkInsert(CONTENT_URI, msgList.toArray(new ContentValues[msgList.size()]));
 	}
 	
-	public static ContentValues processMessage(Document data, int id) throws Exception{
+	public static ContentValues processMessage(JSONObject pmData, int id) throws Exception{
 		ContentValues message = new ContentValues();
 		message.put(ID, id);
-		Elements auth = data.getElementsByClass("author");
+		Elements auth = pmData.getElementsByClass("author");
 		if(auth.size() > 0){
 			message.put(AUTHOR, auth.first().text());
 		}else{
 			throw new Exception("Failed parse: author.");
 		}
-		Elements content = data.getElementsByClass("postbody");
+		Elements content = pmData.getElementsByClass("postbody");
 		if(content.size() > 0){
 			message.put(CONTENT, content.first().text());
 		}else{
 			throw new Exception("Failed parse: content.");
 		}
-		Elements date = data.getElementsByClass("postdate");
+		Elements date = pmData.getElementsByClass("postdate");
 		if(date.size() > 0){
 			message.put(DATE, date.first().text().replaceAll("\"", "").trim());
 		}else{
@@ -199,7 +200,7 @@ public class AwfulMessage extends AwfulPagedItem {
 		return message;
 	}
 
-	public static ContentValues processReplyMessage(Document pmReplyData, int id) {
+	public static ContentValues processReplyMessage(JSONObject pmReplyData, int id) {
 		ContentValues reply = new ContentValues();
 		reply.put(ID, id);
 		reply.put(TYPE, TYPE_PM);

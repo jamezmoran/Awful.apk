@@ -27,6 +27,7 @@
 
 package com.ferg.awfulapp.task;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 
 import android.os.Message;
@@ -46,7 +47,7 @@ public class PrivateMessageIndexTask extends AwfulTask {
 	@Override
 	protected String doInBackground(Void... params) {
 		try {
-			Document pmData = NetworkUtils.get(Constants.FUNCTION_PRIVATE_MESSAGE);
+			JSONObject pmData = NetworkUtils.get(Constants.FUNCTION_PRIVATE_MESSAGE);
 			AwfulMessage.processMessageList(mContext.getContentResolver(), pmData);
 		} catch (Exception e) {
 			Log.e(TAG,"PM Load Failure: "+Log.getStackTraceString(e));

@@ -31,6 +31,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -69,7 +70,7 @@ public class AwfulEmote {
 	}
 
 	
-	public static ArrayList<ContentValues> parseEmotes(Document data){
+	public static ArrayList<ContentValues> parseEmotes(JSONObject data){
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
 		ArrayList<ContentValues> results = new ArrayList<ContentValues>();
 		int index = 1;

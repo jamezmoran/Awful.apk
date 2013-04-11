@@ -34,8 +34,10 @@ import android.util.Log;
 import android.util.TypedValue;
 
 public class Constants {
-    public static final String BASE_URL = "http://forums.somethingawful.com";
-    public static final String BASE_URL_DEV = "http://dev.forums.somethingawful.com";
+	
+	public static final String BASE_URL_BASE = "forums.somethingawful.com";
+    public static final String BASE_URL = "http://" + BASE_URL_BASE;
+    public static final String BASE_URL_DEV = "http://dev." + BASE_URL_BASE;
 
     public static final String FUNCTION_LOGIN           = BASE_URL + "/account.php";
     public static final String FUNCTION_BOOKMARK        = BASE_URL + "/bookmarkthreads.php";
@@ -100,7 +102,7 @@ public class Constants {
 
     public static final String PREFERENCES = "prefs";
     
-	public static final String COOKIE_DOMAIN        = "forums.somethingawful.com";
+	public static final String COOKIE_DOMAIN        = BASE_URL_BASE;
 	public static final String COOKIE_PATH          = "/";
 	public static final String COOKIE_NAME_USERID   = "bbuserid";
 	public static final String COOKIE_NAME_PASSWORD = "bbpassword";

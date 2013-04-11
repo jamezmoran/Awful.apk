@@ -242,54 +242,25 @@ public class NetworkUtils {
 		return "";
 	}
 	
-	public static Document get(AwfulURL aUrl, Messenger statusCallback, int midpointPercent) throws Exception {
+
+	public static JSONObject get(AwfulURL aUrl, Messenger statusCallback, int midpointPercent) throws Exception {
 		return get(new URI(aUrl.getURL()), statusCallback, midpointPercent);
 	}
 	
-	public static Document get(String aUrl, HashMap<String, String> aParams) throws Exception {
+	
+	public static JSONObject get(String aUrl, HashMap<String, String> aParams) throws Exception {
         return get(new URI(aUrl + getQueryStringParameters(aParams)), null, 0);
 	}
 	
-	public static Document get(String aUrl) throws Exception {
+	public static JSONObject get(String aUrl) throws Exception {
         return get(new URI(aUrl), null, 0);
 	}
 	
-	public static Document get(String aUrl, HashMap<String, String> aParams, Messenger statusCallback, int midpointPercent) throws Exception {
+	public static JSONObject get(String aUrl, HashMap<String, String> aParams, Messenger statusCallback, int midpointPercent) throws Exception {
         return get(new URI(aUrl + getQueryStringParameters(aParams)), statusCallback, midpointPercent);
 	}
 	
-	public static JSONObject getJson(String aUrl, HashMap<String, String> aParams, Messenger statusCallback, int midpointPercent) throws Exception {
-        return getJson(new URI(aUrl + getQueryStringParameters(aParams)), statusCallback, midpointPercent);
-	}
-	
-	public static Document get(URI location, Messenger statusCallback, int midpointPercent) throws Exception {
-		Document response = null;
-        Log.i(TAG, "Fetching " + location);
-
-        HttpGet httpGet;
-        HttpResponse httpResponse;
-
-        httpGet = new HttpGet(location);
-        httpResponse = sHttpClient.execute(httpGet);
-
-        HttpEntity entity = httpResponse.getEntity();
-
-        if(statusCallback != null){
-	        //notify user we have gotten message body
-	        statusCallback.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, 0, midpointPercent));
-        }
-	    
-        if (entity != null) {
-        	InputStream entityStream = entity.getContent();
-        	response = Jsoup.parse(entityStream, CHARSET, Constants.BASE_URL);
-        	entityStream.close();
-        }
-        
-        Log.i(TAG, "Fetched " + location);
-        return response;
-	}
-	
-	public static JSONObject getJson(URI location, Messenger statusCallback, int midpointPercent) throws Exception {
+	public static JSONObject get(URI location, Messenger statusCallback, int midpointPercent) throws Exception {
 		JSONObject response = null;
         Log.i(TAG, "Fetching " + location);
 

@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -99,7 +100,7 @@ public class AwfulThread extends AwfulPagedItem  {
 	private static final Pattern forumId_regex = Pattern.compile("forumid=(\\d+)");
 	private static final Pattern urlId_regex = Pattern.compile("([^#]+)#(\\d+)$");
 	
-    public static Document getForumThreads(int aForumId, int aPage, Messenger statusCallback) throws Exception {
+    public static JSONObject getForumThreads(int aForumId, int aPage, Messenger statusCallback) throws Exception {
         HashMap<String, String> params = new HashMap<String, String>();
         params.put(Constants.PARAM_FORUM_ID, Integer.toString(aForumId));
 
@@ -110,7 +111,7 @@ public class AwfulThread extends AwfulPagedItem  {
         return NetworkUtils.get(Constants.FUNCTION_FORUM, params, statusCallback, 50);
 	}
 	
-    public static Document getUserCPThreads(int aPage, Messenger statusCallback) throws Exception {
+    public static JSONObject getUserCPThreads(int aPage, Messenger statusCallback) throws Exception {
     	HashMap<String, String> params = new HashMap<String, String>();
 		params.put(Constants.PARAM_PAGE, Integer.toString(aPage));
         return NetworkUtils.get(Constants.FUNCTION_BOOKMARK, params, statusCallback, 50);
@@ -268,7 +269,7 @@ public class AwfulThread extends AwfulPagedItem  {
         //notify user we are starting update
         statusUpdates.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, aThreadId, 10));
         
-        Document response = NetworkUtils.get(Constants.FUNCTION_THREAD, params, statusUpdates, 25);
+        JSONObject response = NetworkUtils.get(Constants.FUNCTION_THREAD, params, statusUpdates, 25);
 
         if(parentTask.isCancelled()){
             return null;

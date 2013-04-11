@@ -30,6 +30,7 @@ package com.ferg.awfulapp.task;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
@@ -55,7 +56,7 @@ public class IndexTask extends AwfulTask {
 		if (!isCancelled()) {
             try {
                 replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, 0, 10));
-                Document response = NetworkUtils.get(Constants.BASE_URL + "/");
+                JSONObject response = NetworkUtils.get(Constants.BASE_URL + "/");
                 String error = AwfulPagedItem.checkPageErrors(response, replyTo);
                 if(error != null){
                 	return error;
