@@ -266,7 +266,8 @@ public class NetworkUtils {
 
         HttpGet httpGet;
         HttpResponse httpResponse;
-        URI jsonLocation = new URI((location.toString().replace(Constants.BASE_URL, Constants.BASE_URL_DEV))+"&"+Constants.PARAM_JSON+"=1");
+        URI jsonLocation = new URI((location.toString().replace(Constants.BASE_URL, Constants.BASE_URL))+"&"+Constants.PARAM_JSON+"=1");
+        Log.i(TAG, "Fetching " + jsonLocation);
         httpGet = new HttpGet(jsonLocation);
         httpResponse = sHttpClient.execute(httpGet);
 
@@ -285,6 +286,7 @@ public class NetworkUtils {
             while ((line = reader.readLine()) != null) {
               builder.append(line);
             }
+            System.out.println(builder.toString());
         	response = new JSONObject(builder.toString());
         }
         
@@ -348,7 +350,7 @@ public class NetworkUtils {
 	public static Document post(URI location, HashMap<String, String> aParams,Messenger statusCallback, int midpointPercent) throws Exception {
         Document response = null;
 
-		Log.i(TAG, location.toString());
+		Log.i(TAG, "Sending to " +location.toString());
 
         HttpPost httpPost = new HttpPost(location);
 

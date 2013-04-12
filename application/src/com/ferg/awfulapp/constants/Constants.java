@@ -36,8 +36,8 @@ import android.util.TypedValue;
 public class Constants {
 	
 	public static final String BASE_URL_BASE = "forums.somethingawful.com";
-    public static final String BASE_URL = "http://" + BASE_URL_BASE;
-    public static final String BASE_URL_DEV = "http://dev." + BASE_URL_BASE;
+    //public static final String BASE_URL = "http://" + BASE_URL_BASE;
+    public static final String BASE_URL = "http://dev." + BASE_URL_BASE;
 
     public static final String FUNCTION_LOGIN           = BASE_URL + "/account.php";
     public static final String FUNCTION_BOOKMARK        = BASE_URL + "/bookmarkthreads.php";
