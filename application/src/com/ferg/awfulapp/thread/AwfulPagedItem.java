@@ -140,18 +140,20 @@ public abstract class AwfulPagedItem {
 	 * @throws RemoteException
 	 */
 	public static String checkPageErrors(JSONObject response, Messenger handler) throws RemoteException{
-        if(response.getElementsByAttributeValue("id", "notregistered").size() > 0){
-        	handler.send(Message.obtain(null, AwfulSyncService.MSG_ERR_NOT_LOGGED_IN, 0, 0));
-        	return "Error - Not Logged In";
-        }
-        if(response.getElementById("closemsg") != null){
-        	String msg = response.getElementsByClass("reason").text().trim();
-        	if(msg != null && msg.length() > 0){
-        		return "Forums Closed - "+msg;
-        	}else{
-        		return "Error - Forums Closed (Site Down)";
-        	}
-        }
+		
+		//TODO: check later
+//        if(response.getElementsByAttributeValue("id", "notregistered").size() > 0){
+//        	handler.send(Message.obtain(null, AwfulSyncService.MSG_ERR_NOT_LOGGED_IN, 0, 0));
+//        	return "Error - Not Logged In";
+//        }
+//        if(response.getElementById("closemsg") != null){
+//        	String msg = response.getElementsByClass("reason").text().trim();
+//        	if(msg != null && msg.length() > 0){
+//        		return "Forums Closed - "+msg;
+//        	}else{
+//        		return "Error - Forums Closed (Site Down)";
+//        	}
+//        }
         return null;
 	}
 }

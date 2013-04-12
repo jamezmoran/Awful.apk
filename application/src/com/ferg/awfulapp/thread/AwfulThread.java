@@ -261,65 +261,30 @@ public class AwfulThread extends AwfulPagedItem  {
         
         ContentValues thread = new ContentValues();
         thread.put(ID, aThreadId);
-    	Elements tarTitle = response.getElementsByClass("bclast");
-        if (tarTitle.size() > 0) {
-        	thread.put(TITLE, tarTitle.first().text().trim());
-        }else{
-        	Log.e(TAG,"TITLE NOT FOUND!");
-        }
-            
-        Elements replyAlts = response.getElementsByAttributeValue("alt", "Reply");
-        if (replyAlts.size() >0 && replyAlts.get(0).attr("src").contains("forum-closed")) {
+
+        thread.put(TITLE, response.getJSONObject("thread_info").getString("title"));
+
+        if (response.getJSONObject("thread_info").getInt("open") == 0) {
         	thread.put(LOCKED, 1);
         }else{
         	thread.put(LOCKED, 0);
         }
 
-        Elements bkButtons = response.getElementsByAttributeValue("id", "button_bookmark");
-        if (bkButtons.size() >0) {
-        	String bkSrc = bkButtons.get(0).attr("src");
-        	if(bkSrc != null && bkSrc.contains("unbookmark")){
-        		if(bookmarkStatus < 1){
-        			thread.put(BOOKMARKED, 1);
-        		}
-        	}else{
-        		thread.put(BOOKMARKED, 0);
-        	}
-        }
-    	int forumId = -1;
-    	for(Element breadcrumb : response.getElementsByClass("breadcrumbs")){
-	    	for(Element forumLink : breadcrumb.getElementsByAttribute("href")){
-	    		Matcher matchForumId = forumId_regex.matcher(forumLink.attr("href"));
-	    		if(matchForumId.find()){//switched this to a regex
-	    			forumId = Integer.parseInt(matchForumId.group(1));//so this won't fail
-	    		}
-	    	}
-    	}
-    	thread.put(FORUM_ID, forumId);
-    	int lastPage = AwfulPagedItem.parseLastPage(response);
+        //TODO: no bookmarked indicator yet
+        thread.put(BOOKMARKED, 0);
+
+    	thread.put(FORUM_ID, response.getInt("forumid"));
+    	int lastPage = response.getJSONArray("page").getInt(1);
 
         //notify user we have began processing thread info
         statusUpdates.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, aThreadId, 55));
 
 		threadData.close();
-		int replycount;
-		if(aUserId > 0){
-			replycount = AwfulPagedItem.pageToIndex(lastPage, aPageSize, 0);
-		}else{
-			replycount = Math.max(totalReplies, AwfulPagedItem.pageToIndex(lastPage, aPageSize, 0));
-		}
-    	Log.v(TAG, "Parsed lastPage:"+lastPage+" old total: "+totalReplies+" new total:"+replycount);
-    	
-    	thread.put(AwfulThread.POSTCOUNT, replycount);
-    	int newUnread = Math.max(0, replycount-AwfulPagedItem.pageToIndex(aPage, aPageSize, aPageSize-1));
-    	if(unread > 0){
-        	newUnread = Math.min(unread, newUnread);
-    	}
-    	if(aPage == lastPage){
-    		newUnread = 0;
-    	}
-    	thread.put(AwfulThread.UNREADCOUNT, newUnread);
-    	Log.i(TAG, aThreadId+" - Old unread: "+unread+" new unread: "+newUnread);
+
+    	thread.put(AwfulThread.POSTCOUNT, response.getInt("replycount"));
+
+    	thread.put(AwfulThread.UNREADCOUNT, response.getJSONObject("thread_info").getInt("replycount")+1 - response.getInt("seen_posts"));
+    	Log.i(TAG, aThreadId+" - Old unread: "+unread+" new unread: "+ (response.getJSONObject("thread_info").getInt("replycount")+1 - response.getInt("seen_posts")));
 
         //notify user we have began processing posts
         statusUpdates.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, aThreadId, 65));
