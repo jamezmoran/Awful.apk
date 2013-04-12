@@ -105,7 +105,7 @@ public class AwfulForum extends AwfulPagedItem {
 					JSONObject forumGroup = forumGroups.getJSONObject(i);
 					JSONArray forums = forumGroup.getJSONArray("sub_forums");
 					for (int j = 0; j < forums.length(); j++) {
-						JSONObject forumJSON = forums.getJSONObject(i);
+						JSONObject forumJSON = forums.getJSONObject(j);
 						ContentValues forum = new ContentValues();
 						forum.put(TITLE, forumJSON.getString("title"));
 						forum.put(PARENT_ID, 0);
@@ -133,7 +133,7 @@ public class AwfulForum extends AwfulPagedItem {
 								.getJSONArray("sub_forums");
 						for (int k = 0; k < subForums.length(); k++) {
 
-							JSONObject subforumJSON = forums.getJSONObject(i);
+							JSONObject subforumJSON = forums.getJSONObject(k);
 
 							ContentValues subforum = new ContentValues();
 
@@ -168,14 +168,14 @@ public class AwfulForum extends AwfulPagedItem {
 				threads, AwfulPagedItem.forumPageToIndex(pageNumber), forumId);
 		ContentValues forumData = new ContentValues();
 		forumData.put(ID, forumId);
-		forumData.put(TITLE, threads.getString("title"));
+		forumData.put(TITLE, "A forum"); //No title field; get from SQL?
 //		ArrayList<ContentValues> newSubforums = AwfulThread.parseSubforums(
 //				threads, forumId);
 //		contentInterface.delete(AwfulForum.CONTENT_URI, PARENT_ID + "=?",
 //				AwfulProvider.int2StrArray(forumId));
 //		contentInterface.bulkInsert(AwfulForum.CONTENT_URI,
 //				newSubforums.toArray(new ContentValues[newSubforums.size()]));
-		int lastPage = threads.getJSONArray("pages").getInt(1);
+		int lastPage = threads.getJSONArray("page").getInt(1);
 		Log.i(TAG, "Last Page: " + lastPage);
 		forumData.put(PAGE_COUNT, lastPage);
 		contentInterface.delete(AwfulThread.CONTENT_URI, AwfulThread.FORUM_ID

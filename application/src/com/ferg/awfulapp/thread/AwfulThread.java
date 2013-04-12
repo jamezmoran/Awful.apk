@@ -125,11 +125,11 @@ public class AwfulThread extends AwfulPagedItem  {
         JSONObject icons = threads2.getJSONObject("icons");
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
         Log.v(TAG,"Update time: "+update_time);
-		for(int i = 0; i< threads2.length();i++){
+		for(int i = 0 ; i< threads.length() ; i++){
             try {
             	JSONObject threadJSON = threads.getJSONObject(i);
     			ContentValues thread = new ContentValues();
-                thread.put(ID, threadJSON.getInt("id"));
+                thread.put(ID, threadJSON.getInt("threadid"));
                 if(forumId != Constants.USERCP_ID){//we don't update these values if we are loading bookmarks, or it will overwrite the cached forum results.
                 	thread.put(INDEX, start_index);
                 	thread.put(FORUM_ID, forumId);
@@ -176,7 +176,10 @@ public class AwfulThread extends AwfulPagedItem  {
                     }
 					
                     // Bookmarks can only be detected now by the presence of a "bmX" class - no star image
-                    if(threadJSON.getInt("bookmark_category") == 1) {
+                    if(threadJSON.isNull("bookmark_category")){
+
+                        thread.put(BOOKMARKED, 0);
+                    }else if(threadJSON.getInt("bookmark_category") == 1) {
                         thread.put(BOOKMARKED, 1);
                     }
                     else if(threadJSON.getInt("bookmark_category") == 2) {
@@ -184,9 +187,6 @@ public class AwfulThread extends AwfulPagedItem  {
                     }
                     else if(threadJSON.getInt("bookmark_category") == 3) {
                         thread.put(BOOKMARKED, 3);
-                    }
-                    else {
-                        thread.put(BOOKMARKED, 0);
                     }
 
         		thread.put(AwfulProvider.UPDATED_TIMESTAMP, update_time);
@@ -281,10 +281,10 @@ public class AwfulThread extends AwfulPagedItem  {
 
 		threadData.close();
 
-    	thread.put(AwfulThread.POSTCOUNT, response.getInt("replycount"));
-
-    	thread.put(AwfulThread.UNREADCOUNT, response.getJSONObject("thread_info").getInt("replycount")+1 - response.getInt("seen_posts"));
-    	Log.i(TAG, aThreadId+" - Old unread: "+unread+" new unread: "+ (response.getJSONObject("thread_info").getInt("replycount")+1 - response.getInt("seen_posts")));
+    	thread.put(AwfulThread.POSTCOUNT, response.getJSONObject("thread_info").getInt("replycount"));
+    	int seencount = response.isNull("seen_posts") ? 0 : response.getInt("seen_posts");
+    	thread.put(AwfulThread.UNREADCOUNT, response.getJSONObject("thread_info").getInt("replycount")+1 - seencount);
+    	Log.i(TAG, aThreadId+" - Old unread: "+unread+" new unread: "+ (response.getJSONObject("thread_info").getInt("replycount")+1 - seencount));
 
         //notify user we have began processing posts
         statusUpdates.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, aThreadId, 65));

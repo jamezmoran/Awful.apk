@@ -441,8 +441,7 @@ public class AwfulPost {
 			Iterator<String> posts = response.getJSONObject("posts").keys();
 			while (posts.hasNext()) {
 				try {
-					JSONObject postJSON = (JSONObject) response.get(posts
-							.next());
+					JSONObject postJSON = response.getJSONObject("posts").getJSONObject(posts.next());
 					ContentValues post = new ContentValues();
 					post.put(THREAD_ID, aThreadId);
 
@@ -481,8 +480,7 @@ public class AwfulPost {
 
 					posterId = postJSON.getInt("userid");
 
-					JSONObject poster = response.getJSONObject(String
-							.valueOf(posterId));
+					JSONObject poster = response.getJSONObject("userids").getJSONObject(String.valueOf(posterId));
 
 					post.put(USERNAME, poster.getString("username"));
 
@@ -586,8 +584,7 @@ public class AwfulPost {
 					post.put(CONTENT, content);
 
 					// TODO: this is probably wrong
-					post.put(DATE, (new Date(postJSON.getInt("editdate"))
-							.toLocaleString()));
+					post.put(DATE, (new Date(postJSON.getInt("date")).toLocaleString()));
 
 					post.put(USER_ID, postJSON.getInt("userid"));
 					post.put(IS_OP, (opId == postJSON.getInt("userid") ? 1 : 0));

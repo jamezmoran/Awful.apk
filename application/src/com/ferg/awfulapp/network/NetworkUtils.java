@@ -266,7 +266,11 @@ public class NetworkUtils {
 
         HttpGet httpGet;
         HttpResponse httpResponse;
-        URI jsonLocation = new URI((location.toString().replace(Constants.BASE_URL, Constants.BASE_URL))+"&"+Constants.PARAM_JSON+"=1");
+        String connector = "?";
+        if(location.toString().contains("?")){
+        	connector = "&";
+        }
+        URI jsonLocation = new URI((location.toString())+connector+Constants.PARAM_JSON+"=1");
         Log.i(TAG, "Fetching " + jsonLocation);
         httpGet = new HttpGet(jsonLocation);
         httpResponse = sHttpClient.execute(httpGet);
@@ -286,7 +290,6 @@ public class NetworkUtils {
             while ((line = reader.readLine()) != null) {
               builder.append(line);
             }
-            System.out.println(builder.toString());
         	response = new JSONObject(builder.toString());
         }
         
