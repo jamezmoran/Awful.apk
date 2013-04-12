@@ -134,18 +134,18 @@ public abstract class AwfulPagedItem {
 	/**
 	 * Checks a page for forum errors, triggering error message callbacks if found.
 	 * Detects forum closures, logged-out state, and banned/probate status.
-	 * @param page Full HTML page to check.
+	 * @param response Full HTML page to check.
 	 * @param handler Messenger to send reply messages to.
 	 * @return true if error is found, false otherwise
 	 * @throws RemoteException
 	 */
-	public static String checkPageErrors(Document page, Messenger handler) throws RemoteException{
-        if(page.getElementsByAttributeValue("id", "notregistered").size() > 0){
+	public static String checkPageErrors(JSONObject response, Messenger handler) throws RemoteException{
+        if(response.getElementsByAttributeValue("id", "notregistered").size() > 0){
         	handler.send(Message.obtain(null, AwfulSyncService.MSG_ERR_NOT_LOGGED_IN, 0, 0));
         	return "Error - Not Logged In";
         }
-        if(page.getElementById("closemsg") != null){
-        	String msg = page.getElementsByClass("reason").text().trim();
+        if(response.getElementById("closemsg") != null){
+        	String msg = response.getElementsByClass("reason").text().trim();
         	if(msg != null && msg.length() > 0){
         		return "Forums Closed - "+msg;
         	}else{

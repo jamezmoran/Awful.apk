@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -77,7 +78,7 @@ public class AwfulForum extends AwfulPagedItem {
 	private static final Pattern forumId_regex = Pattern.compile("forumid=(\\d+)");
 	private static final Pattern forumTitle_regex = Pattern.compile("(.+)-{1}.+$");
 
-	public static void getForumsFromRemote(Document response, ContentResolver contentInterface){
+	public static void getForumsFromRemote(JSONObject response, ContentResolver contentInterface){
 		ArrayList<ContentValues> result = new ArrayList<ContentValues>();
 
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
@@ -154,15 +155,15 @@ public class AwfulForum extends AwfulPagedItem {
         contentInterface.bulkInsert(AwfulForum.CONTENT_URI, result.toArray(new ContentValues[result.size()]));
 	}
 	
-	public static void parseThreads(Document page, int forumId, int pageNumber, ContentResolver contentInterface) throws Exception{
-		ArrayList<ContentValues> result = AwfulThread.parseForumThreads(page, AwfulPagedItem.forumPageToIndex(pageNumber), forumId);
+	public static void parseThreads(JSONObject threads, int forumId, int pageNumber, ContentResolver contentInterface) throws Exception{
+		ArrayList<ContentValues> result = AwfulThread.parseForumThreads(threads, AwfulPagedItem.forumPageToIndex(pageNumber), forumId);
 		ContentValues forumData = new ContentValues();
     	forumData.put(ID, forumId);
-    	forumData.put(TITLE, AwfulForum.parseTitle(page));
-		ArrayList<ContentValues> newSubforums = AwfulThread.parseSubforums(page, forumId);
+    	forumData.put(TITLE, AwfulForum.parseTitle(threads));
+		ArrayList<ContentValues> newSubforums = AwfulThread.parseSubforums(threads, forumId);
 		contentInterface.delete(AwfulForum.CONTENT_URI, PARENT_ID+"=?", AwfulProvider.int2StrArray(forumId));
 		contentInterface.bulkInsert(AwfulForum.CONTENT_URI, newSubforums.toArray(new ContentValues[newSubforums.size()]));
-        int lastPage = AwfulPagedItem.parseLastPage(page);
+        int lastPage = AwfulPagedItem.parseLastPage(threads);
         Log.i(TAG, "Last Page: " +lastPage);
     	forumData.put(PAGE_COUNT, lastPage);
     	contentInterface.delete(AwfulThread.CONTENT_URI, 
@@ -174,8 +175,8 @@ public class AwfulForum extends AwfulPagedItem {
         contentInterface.bulkInsert(AwfulThread.CONTENT_URI, result.toArray(new ContentValues[result.size()]));
 	}
 	
-	public static void parseUCPThreads(Document page, int pageNumber, ContentResolver contentInterface) throws Exception{
-		ArrayList<ContentValues> threads = AwfulThread.parseForumThreads(page, AwfulPagedItem.forumPageToIndex(pageNumber), Constants.USERCP_ID);
+	public static void parseUCPThreads(JSONObject threads2, int pageNumber, ContentResolver contentInterface) throws Exception{
+		ArrayList<ContentValues> threads = AwfulThread.parseForumThreads(threads2, AwfulPagedItem.forumPageToIndex(pageNumber), Constants.USERCP_ID);
 		ArrayList<ContentValues> ucp_ids = new ArrayList<ContentValues>();
 		int start_index = AwfulPagedItem.forumPageToIndex(pageNumber);
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
@@ -194,7 +195,7 @@ public class AwfulForum extends AwfulPagedItem {
     	forumData.put(PARENT_ID, 0);
     	forumData.put(INDEX, 0);
     	forumData.put(AwfulProvider.UPDATED_TIMESTAMP, update_time);
-        int lastPage = AwfulPagedItem.parseLastPage(page);
+        int lastPage = AwfulPagedItem.parseLastPage(threads2);
         Log.i(TAG, "Last Page: " +lastPage);
     	forumData.put(PAGE_COUNT, lastPage);
     	contentInterface.delete(AwfulThread.CONTENT_URI_UCP, 
@@ -242,8 +243,8 @@ public class AwfulForum extends AwfulPagedItem {
 		}
 	}
 
-	public static String parseTitle(Document data) {
-		Elements result = data.getElementsByTag("title");
+	public static String parseTitle(JSONObject threads) {
+		Elements result = threads.getElementsByTag("title");
 		String title = result.first().text();
 		Matcher m = forumTitle_regex.matcher(title);
 		if(m.find()){

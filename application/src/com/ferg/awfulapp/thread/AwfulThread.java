@@ -117,9 +117,9 @@ public class AwfulThread extends AwfulPagedItem  {
         return NetworkUtils.get(Constants.FUNCTION_BOOKMARK, params, statusCallback, 50);
 	}
 
-	public static ArrayList<ContentValues> parseForumThreads(Document aResponse, int start_index, int forumId) throws Exception{
+	public static ArrayList<ContentValues> parseForumThreads(JSONObject threads2, int start_index, int forumId) throws Exception{
         ArrayList<ContentValues> result = new ArrayList<ContentValues>();
-        Element threads = aResponse.getElementById("forum");
+        Element threads = threads2.getElementById("forum");
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
         Log.v(TAG,"Update time: "+update_time);
 		for(Element node : threads.getElementsByClass("thread")){
@@ -224,9 +224,9 @@ public class AwfulThread extends AwfulPagedItem  {
         return result;
 	}
 	
-	public static ArrayList<ContentValues> parseSubforums(Document aResponse, int parentForumId){
+	public static ArrayList<ContentValues> parseSubforums(JSONObject threads, int parentForumId){
         ArrayList<ContentValues> result = new ArrayList<ContentValues>();
-		Elements subforums = aResponse.getElementsByClass("subforum");
+		Elements subforums = threads.getElementsByClass("subforum");
         for(Element sf : subforums){
         	Elements href = sf.getElementsByAttribute("href");
         	if(href.size() <1){

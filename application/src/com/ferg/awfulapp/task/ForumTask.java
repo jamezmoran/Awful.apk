@@ -1,6 +1,7 @@
 package com.ferg.awfulapp.task;
 
 import org.apache.http.conn.ConnectTimeoutException;
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 
 import android.os.Message;
@@ -26,7 +27,7 @@ public class ForumTask extends AwfulTask {
 	@Override
 	protected String doInBackground(Void... params) {
 		try {
-			Document threads = null;
+			JSONObject threads = null;
             replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, mId, 25));
             if(mId == Constants.USERCP_ID){
             	threads = AwfulThread.getUserCPThreads(mArg1, replyTo);
