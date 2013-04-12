@@ -74,29 +74,30 @@ public class AwfulEmote {
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
 		ArrayList<ContentValues> results = new ArrayList<ContentValues>();
 		int index = 1;
-		for(Element group : data.getElementsByClass("smilie_group")){
-			Log.e(TAG,"Parsing group.");
-			for(Element smilie : group.getElementsByClass("smilie")){
-				Log.e(TAG,"Parsing item.");
-				try{
-					ContentValues emote = new ContentValues();
-					Elements text = smilie.getElementsByClass("text");
-					emote.put(ID, index++);//intentional post-increment
-					emote.put(TEXT, text.text().trim());
-					Elements img = smilie.getElementsByAttribute("src");
-					emote.put(SUBTEXT, img.attr("title"));
-					String url = img.attr("src");
-					emote.put(AwfulEmote.URL, url);
-					emote.put(INDEX, index);
-		        	//timestamp for DB trimming
-					emote.put(AwfulProvider.UPDATED_TIMESTAMP, update_time);
-					results.add(emote);
-				}catch(Exception e){
-					e.printStackTrace();
-					continue;
-				}
-			}
-		}
+		//TODO: Maybe later
+//		for(Element group : data.getElementsByClass("smilie_group")){
+//			Log.e(TAG,"Parsing group.");
+//			for(Element smilie : group.getElementsByClass("smilie")){
+//				Log.e(TAG,"Parsing item.");
+//				try{
+//					ContentValues emote = new ContentValues();
+//					Elements text = smilie.getElementsByClass("text");
+//					emote.put(ID, index++);//intentional post-increment
+//					emote.put(TEXT, text.text().trim());
+//					Elements img = smilie.getElementsByAttribute("src");
+//					emote.put(SUBTEXT, img.attr("title"));
+//					String url = img.attr("src");
+//					emote.put(AwfulEmote.URL, url);
+//					emote.put(INDEX, index);
+//		        	//timestamp for DB trimming
+//					emote.put(AwfulProvider.UPDATED_TIMESTAMP, update_time);
+//					results.add(emote);
+//				}catch(Exception e){
+//					e.printStackTrace();
+//					continue;
+//				}
+//			}
+//		}
 		return results;
 	}
 }

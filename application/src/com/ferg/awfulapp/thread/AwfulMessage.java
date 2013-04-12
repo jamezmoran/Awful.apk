@@ -137,66 +137,68 @@ public class AwfulMessage extends AwfulPagedItem {
 		}*/
 		
 		/**METHOD Two: Parse table structure, hard and quick to break.**/
-		Elements messagesParent = pmData.getElementsByAttributeValue("name", "form");
-		if(messagesParent.size() > 0){
-			Elements messages = messagesParent.first().getElementsByTag("tr");
-			for(Element msg : messages){
-				if(msg == messages.get(0)){
-					continue;
-				}
-				ContentValues pm = new ContentValues();
-				//fuck i hate scraping shit.
-				//no usable identifiers on the PM list, no easy method to find author/post date.
-				//this will break if they change the display structure.
-				Elements row = msg.getElementsByTag("td");
-				if(row != null && row.size() > 4){
-					//TODO abandon hope, all ye who enter
-					//row[0] - icon, newpm.gif - sublevel
-					//row[1] - post icon TODO if we ever add icon support - sublevel
-					//row[2] - pm subject/link - sublevel
-					//row[3] - sender
-					//row[4] - date
-					Element href = row.get(2).getElementsByTag("a").first();
-					pm.put(ID, Integer.parseInt(href.attr("href").replaceAll("\\D", "")));
-					pm.put(TITLE, href.text());
-					pm.put(AUTHOR, row.get(3).text());
-					pm.put(DATE, row.get(4).text());
-					pm.put(CONTENT, " ");
-					if(row.first().getAllElements().first().attr("src").contains("newpm.gif")){
-						pm.put(UNREAD, 1);
-					}else{
-						pm.put(UNREAD, 0);
-					}
-					msgList.add(pm);
-				}
-			}
-		}else{
-			throw new Exception("Failed to parse message parent");
-		}
+		//TODO: currently no JSON PMs
+//		Elements messagesParent = pmData.getElementsByAttributeValue("name", "form");
+//		if(messagesParent.size() > 0){
+//			Elements messages = messagesParent.first().getElementsByTag("tr");
+//			for(Element msg : messages){
+//				if(msg == messages.get(0)){
+//					continue;
+//				}
+//				ContentValues pm = new ContentValues();
+//				//fuck i hate scraping shit.
+//				//no usable identifiers on the PM list, no easy method to find author/post date.
+//				//this will break if they change the display structure.
+//				Elements row = msg.getElementsByTag("td");
+//				if(row != null && row.size() > 4){
+//					//TODO abandon hope, all ye who enter
+//					//row[0] - icon, newpm.gif - sublevel
+//					//row[1] - post icon TODO if we ever add icon support - sublevel
+//					//row[2] - pm subject/link - sublevel
+//					//row[3] - sender
+//					//row[4] - date
+//					Element href = row.get(2).getElementsByTag("a").first();
+//					pm.put(ID, Integer.parseInt(href.attr("href").replaceAll("\\D", "")));
+//					pm.put(TITLE, href.text());
+//					pm.put(AUTHOR, row.get(3).text());
+//					pm.put(DATE, row.get(4).text());
+//					pm.put(CONTENT, " ");
+//					if(row.first().getAllElements().first().attr("src").contains("newpm.gif")){
+//						pm.put(UNREAD, 1);
+//					}else{
+//						pm.put(UNREAD, 0);
+//					}
+//					msgList.add(pm);
+//				}
+//			}
+//		}else{
+//			throw new Exception("Failed to parse message parent");
+//		}
+		
 		contentInterface.bulkInsert(CONTENT_URI, msgList.toArray(new ContentValues[msgList.size()]));
 	}
 	
 	public static ContentValues processMessage(JSONObject pmData, int id) throws Exception{
 		ContentValues message = new ContentValues();
 		message.put(ID, id);
-		Elements auth = pmData.getElementsByClass("author");
-		if(auth.size() > 0){
-			message.put(AUTHOR, auth.first().text());
-		}else{
-			throw new Exception("Failed parse: author.");
-		}
-		Elements content = pmData.getElementsByClass("postbody");
-		if(content.size() > 0){
-			message.put(CONTENT, content.first().text());
-		}else{
-			throw new Exception("Failed parse: content.");
-		}
-		Elements date = pmData.getElementsByClass("postdate");
-		if(date.size() > 0){
-			message.put(DATE, date.first().text().replaceAll("\"", "").trim());
-		}else{
-			throw new Exception("Failed parse: date.");
-		}
+//		Elements auth = pmData.getElementsByClass("author");
+//		if(auth.size() > 0){
+//			message.put(AUTHOR, auth.first().text());
+//		}else{
+//			throw new Exception("Failed parse: author.");
+//		}
+//		Elements content = pmData.getElementsByClass("postbody");
+//		if(content.size() > 0){
+//			message.put(CONTENT, content.first().text());
+//		}else{
+//			throw new Exception("Failed parse: content.");
+//		}
+//		Elements date = pmData.getElementsByClass("postdate");
+//		if(date.size() > 0){
+//			message.put(DATE, date.first().text().replaceAll("\"", "").trim());
+//		}else{
+//			throw new Exception("Failed parse: date.");
+//		}
 		return message;
 	}
 
@@ -204,16 +206,17 @@ public class AwfulMessage extends AwfulPagedItem {
 		ContentValues reply = new ContentValues();
 		reply.put(ID, id);
 		reply.put(TYPE, TYPE_PM);
-		Elements message = pmReplyData.getElementsByAttributeValue("name", "message");
-		if(message.size() >0){
-			String quoteText = StringEscapeUtils.unescapeHtml4(message.first().text().replaceAll("[\\r\\f]", ""));
-			reply.put(REPLY_CONTENT, quoteText);
-		}
-		Elements title = pmReplyData.getElementsByAttributeValue("name", "title");
-		if(title.size() >0){
-			String quoteTitle = StringEscapeUtils.unescapeHtml4(title.first().attr("value"));
-			reply.put(TITLE, quoteTitle);
-		}
+		//TODO: currently no PM JSON
+//		Elements message = pmReplyData.getElementsByAttributeValue("name", "message");
+//		if(message.size() >0){
+//			String quoteText = StringEscapeUtils.unescapeHtml4(message.first().text().replaceAll("[\\r\\f]", ""));
+//			reply.put(REPLY_CONTENT, quoteText);
+//		}
+//		Elements title = pmReplyData.getElementsByAttributeValue("name", "title");
+//		if(title.size() >0){
+//			String quoteTitle = StringEscapeUtils.unescapeHtml4(title.first().attr("value"));
+//			reply.put(TITLE, quoteTitle);
+//		}
 		return reply;
 	}
 	

@@ -155,15 +155,12 @@ public class Reply {
     }
     
     public static final String getMessageContent(JSONObject response) throws Exception{
-    	Element formContent = response.getElementsByAttributeValue("name", "message").first();
-        return formContent.text().trim();
+        return response.getString("text");
     }
 
     public static final ContentValues getReplyData(JSONObject response, ContentValues results) throws Exception {
-    	Element formKey = response.getElementsByAttributeValue("name", "formkey").first();
-    	Element formCookie = response.getElementsByAttributeValue("name", "form_cookie").first();
-    	results.put(AwfulPost.FORM_KEY, formKey.val());
-    	results.put(AwfulPost.FORM_COOKIE, formCookie.val());
+    	results.put(AwfulPost.FORM_KEY, response.getString("formkey"));
+    	results.put(AwfulPost.FORM_COOKIE, response.getString("form_cookie"));
         return results;
     }
     
