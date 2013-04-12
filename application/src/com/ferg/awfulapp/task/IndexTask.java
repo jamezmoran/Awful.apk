@@ -64,28 +64,29 @@ public class IndexTask extends AwfulTask {
                 replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, 0, 50));
                 AwfulForum.getForumsFromRemote(response, mContext.getContentResolver());
                 replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, 0, 90));
-                Elements pmBlock = response.getElementsByAttributeValue("id", "pm");
-                try{
-                    if(pmBlock.size() >0){
-                    	Elements bolded = pmBlock.first().getElementsByTag("b");
-                    	if(bolded.size() > 1){
-                    		String name = bolded.first().text().split("'")[0];
-                    		String unread = bolded.get(1).text();
-                    		Pattern findUnread = Pattern.compile("(\\d+)\\s+unread");
-                    		Matcher matchUnread = findUnread.matcher(unread);
-                    		int unreadCount = -1;
-                    		if(matchUnread.find()){
-                    			unreadCount = Integer.parseInt(matchUnread.group(1));
-                    		}
-                        	Log.v(TAG,"text: "+name+" - "+unreadCount);
-                        	if(name != null && name.length() > 0){
-                        		mPrefs.setUsername(name);
-                        	}
-                    	}
-                    }
-                }catch(Exception e){
-                	//this chunk is optional, no need to fail everything if it doens't work out.
-                }
+//                TODO: reenable pm loading
+//                Elements pmBlock = response.getElementsByAttributeValue("id", "pm");
+//                try{
+//                    if(pmBlock.size() >0){
+//                    	Elements bolded = pmBlock.first().getElementsByTag("b");
+//                    	if(bolded.size() > 1){
+//                    		String name = bolded.first().text().split("'")[0];
+//                    		String unread = bolded.get(1).text();
+//                    		Pattern findUnread = Pattern.compile("(\\d+)\\s+unread");
+//                    		Matcher matchUnread = findUnread.matcher(unread);
+//                    		int unreadCount = -1;
+//                    		if(matchUnread.find()){
+//                    			unreadCount = Integer.parseInt(matchUnread.group(1));
+//                    		}
+//                        	Log.v(TAG,"text: "+name+" - "+unreadCount);
+//                        	if(name != null && name.length() > 0){
+//                        		mPrefs.setUsername(name);
+//                        	}
+//                    	}
+//                    }
+//                }catch(Exception e){
+//                	//this chunk is optional, no need to fail everything if it doens't work out.
+//                }
             } catch (Exception e) {
                 e.printStackTrace();
                 return "Failed to load Forum List!";
