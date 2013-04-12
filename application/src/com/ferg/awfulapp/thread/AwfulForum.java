@@ -133,7 +133,7 @@ public class AwfulForum extends AwfulPagedItem {
 								.getJSONArray("sub_forums");
 						for (int k = 0; k < subForums.length(); k++) {
 
-							JSONObject subforumJSON = forums.getJSONObject(k);
+							JSONObject subforumJSON = subForums.getJSONObject(k);
 
 							ContentValues subforum = new ContentValues();
 
