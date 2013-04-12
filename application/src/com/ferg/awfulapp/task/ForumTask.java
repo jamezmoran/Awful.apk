@@ -45,12 +45,12 @@ public class ForumTask extends AwfulTask {
                 	Log.e(TAG,"Parsing Failed: "+error);
                 	return error;
                 }
-        		String innerText = threads.getElementsByClass("inner").text();
-        		if(innerText.contains("Specified forum was not found in the live forums.") || innerText.contains("You do not have permission to access this page.")){
-                	Log.e(TAG,"Parsing Failed: Forum "+mId+" not found, deleting entry.");
-        			mContext.getContentResolver().delete(AwfulForum.CONTENT_URI, AwfulForum.ID+"=?", AwfulProvider.int2StrArray(mId));
-        			return "Error - Forum does not exist or you do not have permission to view it.";
-        		}
+//        		String innerText = threads.getElementsByClass("inner").text();
+//        		if(innerText.contains("Specified forum was not found in the live forums.") || innerText.contains("You do not have permission to access this page.")){
+//                	Log.e(TAG,"Parsing Failed: Forum "+mId+" not found, deleting entry.");
+//        			mContext.getContentResolver().delete(AwfulForum.CONTENT_URI, AwfulForum.ID+"=?", AwfulProvider.int2StrArray(mId));
+//        			return "Error - Forum does not exist or you do not have permission to view it.";
+//        		}
                 AwfulForum.parseThreads(threads, mId, mArg1, mContext.getContentResolver());
             }
             replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, mId, 100));

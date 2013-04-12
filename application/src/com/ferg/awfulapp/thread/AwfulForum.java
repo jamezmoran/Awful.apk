@@ -77,10 +77,10 @@ public class AwfulForum extends AwfulPagedItem {
 	// private static final String FORUM_TITLE = "//a[@class='forum']";
 	// private static final String SUBFORUM = "//div[@class='subforums']//a";
 
-	//	private static final Pattern forumId_regex = Pattern
-	//			.compile("forumid=(\\d+)");
-	//	private static final Pattern forumTitle_regex = Pattern
-	//			.compile("(.+)-{1}.+$");
+	// private static final Pattern forumId_regex = Pattern
+	// .compile("forumid=(\\d+)");
+	// private static final Pattern forumTitle_regex = Pattern
+	// .compile("(.+)-{1}.+$");
 
 	public static void getForumsFromRemote(JSONObject response,
 			ContentResolver contentInterface) {
@@ -113,7 +113,7 @@ public class AwfulForum extends AwfulPagedItem {
 						ix++;
 						forum.put(ID, forumJSON.getInt("id"));
 						// currently not in the json:
-						forum.put(SUBTEXT, forumJSON.getString("title")); 
+						forum.put(SUBTEXT, forumJSON.getString("title"));
 
 						if (forumJSON.getString("icon") != null) {
 							String url = forumJSON.getString("icon");
@@ -153,11 +153,13 @@ public class AwfulForum extends AwfulPagedItem {
 			e.printStackTrace();
 		}
 
-		Log.i(TAG, "Deleted old forums: "
+		Log.i(TAG,
+				"Deleted old forums: "
 						+ contentInterface.delete(AwfulForum.CONTENT_URI,
 								AwfulForum.PARENT_ID + "=?",
 								AwfulProvider.int2StrArray(0)));
-		contentInterface.bulkInsert(AwfulForum.CONTENT_URI,	result.toArray(new ContentValues[result.size()]));
+		contentInterface.bulkInsert(AwfulForum.CONTENT_URI,
+				result.toArray(new ContentValues[result.size()]));
 	}
 
 	public static void parseThreads(JSONObject threads, int forumId,
@@ -167,13 +169,13 @@ public class AwfulForum extends AwfulPagedItem {
 		ContentValues forumData = new ContentValues();
 		forumData.put(ID, forumId);
 		forumData.put(TITLE, threads.getString("title"));
-		ArrayList<ContentValues> newSubforums = AwfulThread.parseSubforums(
-				threads, forumId);
-		contentInterface.delete(AwfulForum.CONTENT_URI, PARENT_ID + "=?",
-				AwfulProvider.int2StrArray(forumId));
-		contentInterface.bulkInsert(AwfulForum.CONTENT_URI,
-				newSubforums.toArray(new ContentValues[newSubforums.size()]));
-		int lastPage = AwfulPagedItem.parseLastPage(threads);
+//		ArrayList<ContentValues> newSubforums = AwfulThread.parseSubforums(
+//				threads, forumId);
+//		contentInterface.delete(AwfulForum.CONTENT_URI, PARENT_ID + "=?",
+//				AwfulProvider.int2StrArray(forumId));
+//		contentInterface.bulkInsert(AwfulForum.CONTENT_URI,
+//				newSubforums.toArray(new ContentValues[newSubforums.size()]));
+		int lastPage = threads.getJSONArray("pages").getInt(1);
 		Log.i(TAG, "Last Page: " + lastPage);
 		forumData.put(PAGE_COUNT, lastPage);
 		contentInterface.delete(AwfulThread.CONTENT_URI, AwfulThread.FORUM_ID
@@ -214,7 +216,7 @@ public class AwfulForum extends AwfulPagedItem {
 		forumData.put(PARENT_ID, 0);
 		forumData.put(INDEX, 0);
 		forumData.put(AwfulProvider.UPDATED_TIMESTAMP, update_time);
-		int lastPage = AwfulPagedItem.parseLastPage(threads2);
+		int lastPage = threads2.getJSONArray("page").getInt(0);
 		Log.i(TAG, "Last Page: " + lastPage);
 		forumData.put(PAGE_COUNT, lastPage);
 		contentInterface.delete(AwfulThread.CONTENT_URI_UCP, AwfulThread.INDEX
@@ -231,7 +233,6 @@ public class AwfulForum extends AwfulPagedItem {
 		contentInterface.bulkInsert(AwfulThread.CONTENT_URI_UCP,
 				ucp_ids.toArray(new ContentValues[ucp_ids.size()]));
 	}
-
 
 	public static void getView(View current, AwfulPreferences mPrefs,
 			Cursor data, boolean hasSidebar, boolean selected) {

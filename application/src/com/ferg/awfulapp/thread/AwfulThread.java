@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -119,100 +120,75 @@ public class AwfulThread extends AwfulPagedItem  {
 
 	public static ArrayList<ContentValues> parseForumThreads(JSONObject threads2, int start_index, int forumId) throws Exception{
         ArrayList<ContentValues> result = new ArrayList<ContentValues>();
-        Element threads = threads2.getElementById("forum");
+        JSONArray threads = threads2.getJSONArray("threads");
+        
+        JSONObject icons = threads2.getJSONObject("icons");
         String update_time = new Timestamp(System.currentTimeMillis()).toString();
         Log.v(TAG,"Update time: "+update_time);
-		for(Element node : threads.getElementsByClass("thread")){
+		for(int i = 0; i< threads2.length();i++){
             try {
+            	JSONObject threadJSON = threads.getJSONObject(i);
     			ContentValues thread = new ContentValues();
-                String threadId = node.id();
-                if(threadId == null || threadId.length() < 1){
-                	//skip the table header
-                	continue;
-                }
-                thread.put(ID, Integer.parseInt(threadId.replaceAll("\\D", "")));
+                thread.put(ID, threadJSON.getInt("id"));
                 if(forumId != Constants.USERCP_ID){//we don't update these values if we are loading bookmarks, or it will overwrite the cached forum results.
                 	thread.put(INDEX, start_index);
                 	thread.put(FORUM_ID, forumId);
                 }
                 start_index++;
-                Elements tarThread = node.getElementsByClass("thread_title");
-                Elements tarPostCount = node.getElementsByClass("replies");
-            	if (tarPostCount.size() > 0) {
-                    thread.put(POSTCOUNT, Integer.parseInt(tarPostCount.first().text().trim())+1);//this represents the number of replies, but the actual postcount includes OP
-                }
-                if (tarThread.size() > 0) {
-                    thread.put(TITLE, tarThread.first().text().trim());
-                }
-                
-                if(node.hasClass("closed")){
-                	thread.put(LOCKED, 1);
-                }else{
-                	thread.put(LOCKED, 0);
-                }
+                //this represents the number of replies, but the actual postcount includes OP
+                thread.put(POSTCOUNT, threadJSON.getInt("replycount")+1);
+                thread.put(TITLE, threadJSON.getString("title"));
+
+                thread.put(LOCKED,( ( threadJSON.getInt("open")==0 ) ? 1 : 0 ));
                 	
+                thread.put(LASTPOSTER, threadJSON.getString("lastposter"));
+                thread.put(STICKY,threadJSON.getInt("sticky"));
+                int threadIcon = threadJSON.getInt("iconid");
+                
 
-                Elements killedBy = node.getElementsByClass("lastpost");
-                thread.put(LASTPOSTER, killedBy.first().getElementsByClass("author").first().text());
-                Elements tarSticky = node.getElementsByClass("title_sticky");
-                if (tarSticky.size() > 0) {
-                    thread.put(STICKY,1);
-                } else {
-                    thread.put(STICKY,0);
-                }
-
-                Elements tarIcon = node.getElementsByClass("icon");
-                if (tarIcon.size() > 0 && tarIcon.first().getAllElements().size() >0) {
-                    Matcher threadTagMatcher = urlId_regex.matcher(tarIcon.first().getElementsByTag("img").first().attr("src"));
-                    if(threadTagMatcher.find()){
-                    	//thread tag stuff
-        				Matcher fileNameMatcher = AwfulEmote.fileName_regex.matcher(threadTagMatcher.group(1));
-        				if(fileNameMatcher.find()){
-        					thread.put(TAG_CACHEFILE,fileNameMatcher.group(1));
-        				}
-                    	thread.put(TAG_URL, threadTagMatcher.group(1));
-                    	thread.put(CATEGORY, threadTagMatcher.group(2));
-                    }else{
+//                Elements tarIcon = node.getElementsByClass("icon");
+//                if (tarIcon.size() > 0 && tarIcon.first().getAllElements().size() >0) {
+//                    Matcher threadTagMatcher = urlId_regex.matcher(tarIcon.first().getElementsByTag("img").first().attr("src"));
+//                    if(threadTagMatcher.find()){
+//                    	//thread tag stuff
+//        				Matcher fileNameMatcher = AwfulEmote.fileName_regex.matcher(threadTagMatcher.group(1));
+//        				if(fileNameMatcher.find()){
+//        					thread.put(TAG_CACHEFILE,fileNameMatcher.group(1));
+//        				}
+                    	thread.put(TAG_URL, icons.getJSONObject(String.valueOf(threadIcon)).getString("iconpath"));
+//                    	thread.put(CATEGORY, threadTagMatcher.group(2));
+//                    }else{
                     	thread.put(CATEGORY, 0);
+//                    }
+//                }
+
+
+                    thread.put(AUTHOR, threadJSON.getString("postusername"));
+
+                    thread.put(AUTHOR_ID, threadJSON.getInt("postuserid"));
+
+                    if(threadJSON.isNull("seen_posts")){
+                        thread.put(UNREADCOUNT, 0);
+    					thread.put(HAS_VIEWED_THREAD, 0);                    	
+                    }else{
+                        thread.put(UNREADCOUNT, threadJSON.getInt("newpostcount"));
+    					thread.put(HAS_VIEWED_THREAD, 1);                    	
                     }
-                }
-
-                Elements tarUser = node.getElementsByClass("author");
-                if (tarUser.size() > 0) {
-                    // There's got to be a better way to do this
-                    thread.put(AUTHOR, tarUser.first().text().trim());
-                    // And probably a much better way to do this
-                    thread.put(AUTHOR_ID,tarUser.first().getElementsByAttribute("href").first().attr("href").substring(tarUser.first().getElementsByAttribute("href").first().attr("href").indexOf("userid=")+7));
-                }
-
-                Elements tarCount = node.getElementsByClass("count");
-                if (tarCount.size() > 0 && tarCount.first().getAllElements().size() >0) {
-                    thread.put(UNREADCOUNT, Integer.parseInt(tarCount.first().getAllElements().first().text().trim()));
-					thread.put(HAS_VIEWED_THREAD, 1);
-                } else {
-					thread.put(UNREADCOUNT, 0);
-                	Elements tarXCount = node.getElementsByClass("x");
-                	// If there are X's then the user has viewed the thread
-					thread.put(HAS_VIEWED_THREAD, (tarXCount.isEmpty()?0:1));
-                }
-                Elements tarStar = node.getElementsByClass("star");
-                if(tarStar.size()>0) {
+					
                     // Bookmarks can only be detected now by the presence of a "bmX" class - no star image
-                    if(tarStar.first().hasClass("bm0")) {
+                    if(threadJSON.getInt("bookmark_category") == 1) {
                         thread.put(BOOKMARKED, 1);
                     }
-                    else if(tarStar.first().hasClass("bm1")) {
+                    else if(threadJSON.getInt("bookmark_category") == 2) {
                         thread.put(BOOKMARKED, 2);
                     }
-                    else if(tarStar.first().hasClass("bm2")) {
+                    else if(threadJSON.getInt("bookmark_category") == 3) {
                         thread.put(BOOKMARKED, 3);
                     }
                     else {
                         thread.put(BOOKMARKED, 0);
                     }
-                } else {
-                    thread.put(BOOKMARKED, 0);
-                }
+
         		thread.put(AwfulProvider.UPDATED_TIMESTAMP, update_time);
                 result.add(thread);
             } catch (NullPointerException e) {
@@ -224,29 +200,29 @@ public class AwfulThread extends AwfulPagedItem  {
         return result;
 	}
 	
-	public static ArrayList<ContentValues> parseSubforums(JSONObject threads, int parentForumId){
-        ArrayList<ContentValues> result = new ArrayList<ContentValues>();
-		Elements subforums = threads.getElementsByClass("subforum");
-        for(Element sf : subforums){
-        	Elements href = sf.getElementsByAttribute("href");
-        	if(href.size() <1){
-        		continue;
-        	}
-        	int id = Integer.parseInt(href.first().attr("href").replaceAll("\\D", ""));
-        	if(id > 0){
-        		ContentValues tmp = new ContentValues();
-        		tmp.put(AwfulForum.ID, id);
-        		tmp.put(AwfulForum.PARENT_ID, parentForumId);
-        		tmp.put(AwfulForum.TITLE, href.first().text());
-        		Elements subtext = sf.getElementsByTag("dd");
-        		if(subtext.size() >0){
-        			tmp.put(AwfulForum.SUBTEXT, subtext.first().text().replaceAll("\"", "").trim().substring(2));//ugh
-        		}
-        		result.add(tmp);
-        	}
-        }
-        return result;
-    }
+//	public static ArrayList<ContentValues> parseSubforums(JSONObject threads, int parentForumId){
+//        ArrayList<ContentValues> result = new ArrayList<ContentValues>();
+//		Elements subforums = threads.getElementsByClass("subforum");
+//        for(Element sf : subforums){
+//        	Elements href = sf.getElementsByAttribute("href");
+//        	if(href.size() <1){
+//        		continue;
+//        	}
+//        	int id = Integer.parseInt(href.first().attr("href").replaceAll("\\D", ""));
+//        	if(id > 0){
+//        		ContentValues tmp = new ContentValues();
+//        		tmp.put(AwfulForum.ID, id);
+//        		tmp.put(AwfulForum.PARENT_ID, parentForumId);
+//        		tmp.put(AwfulForum.TITLE, href.first().text());
+//        		Elements subtext = sf.getElementsByTag("dd");
+//        		if(subtext.size() >0){
+//        			tmp.put(AwfulForum.SUBTEXT, subtext.first().text().replaceAll("\"", "").trim().substring(2));//ugh
+//        		}
+//        		result.add(tmp);
+//        	}
+//        }
+//        return result;
+//    }
 
     public static String getThreadPosts(Context aContext, int aThreadId, int aPage, int aPageSize, AwfulPreferences aPrefs, int aUserId, Messenger statusUpdates, ThreadTask parentTask) throws Exception {
         HashMap<String, String> params = new HashMap<String, String>();

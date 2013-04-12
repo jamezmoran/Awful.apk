@@ -48,33 +48,33 @@ public abstract class AwfulPagedItem {
     
 	private static final Pattern pageNumber_regex = Pattern.compile("Pages \\((\\d+)\\)");
 	
-    public static int parseLastPage(JSONObject response){
-    	int pagesTop, pagesBottom;
-    	try{
-    		Elements pages = response.getElementsByClass("pages");
-    		pagesTop = Integer.parseInt(pages.first().getElementsByTag("a").last().html().replaceAll("[^\\d.]", ""));
-    	   	pagesBottom = Integer.parseInt(pages.last().getElementsByTag("a").last().html().replaceAll("[^\\d.]", ""));
-       	}catch(NumberFormatException ex){
-       		Log.e(TAG, "NumberFormatException thrown while parseLastPage");
-       		try{
-	    		Elements pages = response.getElementsByClass("pages");
-	    		pagesTop = Integer.parseInt(pages.first().getElementsByTag("span").last().html().replaceAll("[^\\d.]", ""));
-	    	   	pagesBottom = Integer.parseInt(pages.last().getElementsByTag("span").last().html().replaceAll("[^\\d.]", ""));
-	       	}catch(NullPointerException exB){
-	       		Log.e(TAG, "Additional NullPointerException thrown while parseLastPage");
-	       		ex.printStackTrace();
-	    		return 1;
-    		}
-    	}catch(NullPointerException ex){
-           		Log.e(TAG, "NullPointerException thrown while parseLastPage");
-           		ex.printStackTrace();
-        		return 1;
-    	}
-    	//Better too few pages than too many
-    	if(pagesBottom < pagesTop){
-    		return pagesBottom;
-    	}
-    	return pagesTop;
+//    public static int parseLastPage(JSONObject response){
+//    	int pagesTop, pagesBottom;
+//    	try{
+//    		Elements pages = response.getElementsByClass("pages");
+//    		pagesTop = Integer.parseInt(pages.first().getElementsByTag("a").last().html().replaceAll("[^\\d.]", ""));
+//    	   	pagesBottom = Integer.parseInt(pages.last().getElementsByTag("a").last().html().replaceAll("[^\\d.]", ""));
+//       	}catch(NumberFormatException ex){
+//       		Log.e(TAG, "NumberFormatException thrown while parseLastPage");
+//       		try{
+//	    		Elements pages = response.getElementsByClass("pages");
+//	    		pagesTop = Integer.parseInt(pages.first().getElementsByTag("span").last().html().replaceAll("[^\\d.]", ""));
+//	    	   	pagesBottom = Integer.parseInt(pages.last().getElementsByTag("span").last().html().replaceAll("[^\\d.]", ""));
+//	       	}catch(NullPointerException exB){
+//	       		Log.e(TAG, "Additional NullPointerException thrown while parseLastPage");
+//	       		ex.printStackTrace();
+//	    		return 1;
+//    		}
+//    	}catch(NullPointerException ex){
+//           		Log.e(TAG, "NullPointerException thrown while parseLastPage");
+//           		ex.printStackTrace();
+//        		return 1;
+//    	}
+//    	//Better too few pages than too many
+//    	if(pagesBottom < pagesTop){
+//    		return pagesBottom;
+//    	}
+//    	return pagesTop;
     	
     	//TODO: remove if above works
 //    	Element pages = pagedItem.getElementsByAttributeValue("class", "pages").first();
@@ -90,7 +90,7 @@ public abstract class AwfulPagedItem {
 //    	if(lastPageMatch != null && lastPageMatch.find()){
 //    		return Integer.parseInt(lastPageMatch.group(1));
 //    	}
-    }
+//    }
     
     public static int parseLastPage(Element pagedItem){
     	Matcher lastPageMatch = null;
