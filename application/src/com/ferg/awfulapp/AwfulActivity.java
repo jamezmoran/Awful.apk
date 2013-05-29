@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.net.http.HttpResponseCache;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -40,7 +41,8 @@ import com.ferg.awfulapp.service.AwfulSyncService;
  * This class also provides a few helper methods for grabbing preferences and the like.
  */
 public class AwfulActivity extends SherlockFragmentActivity implements ServiceConnection, AwfulUpdateCallback {
-    private static final String TAG = "AwfulActivity";
+    protected static String TAG = "AwfulActivity";
+    protected static final boolean DEBUG = Constants.DEBUG;
 	private ActivityConfigurator mConf;
     private Messenger mService = null;
     private LinkedList<Message> mMessageQueue = new LinkedList<Message>();
@@ -60,7 +62,7 @@ public class AwfulActivity extends SherlockFragmentActivity implements ServiceCo
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState); if(DEBUG) Log.e(TAG, "onCreate");
         aq = new AQuery(this);
         mConf = new ActivityConfigurator(this);
         mConf.onCreate();
@@ -73,14 +75,14 @@ public class AwfulActivity extends SherlockFragmentActivity implements ServiceCo
 
     @Override
     protected void onStart() {
-        super.onStart();
+        super.onStart(); if(DEBUG) Log.e(TAG, "onStart");
         mConf.onStart();
         bindService(new Intent(this, AwfulSyncService.class), this, BIND_AUTO_CREATE);
     }
     
     @Override
     protected void onResume() {
-        super.onResume();
+        super.onResume(); if(DEBUG) Log.e(TAG, "onResume");
         mConf.onResume();
         
         if (isLoggedIn()) {
@@ -94,20 +96,26 @@ public class AwfulActivity extends SherlockFragmentActivity implements ServiceCo
     
     @Override
     protected void onPause() {
-        super.onPause();
+        super.onPause(); if(DEBUG) Log.e(TAG, "onPause");
         mConf.onPause();
     }
     
     @Override
     protected void onStop() {
-        super.onStop();
+        super.onStop(); if(DEBUG) Log.e(TAG, "onStop");
         mConf.onStop();
         unbindService(this);
+        if(Constants.isICS()){
+            HttpResponseCache cache = HttpResponseCache.getInstalled();
+            if(cache != null){
+                cache.flush();
+            }
+        }
     }
     
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        super.onDestroy(); if(DEBUG) Log.e(TAG, "onDestroy");
         mConf.onDestroy();
     }
 
@@ -208,11 +216,12 @@ public class AwfulActivity extends SherlockFragmentActivity implements ServiceCo
     }
     
 	public void displayReplyWindow(int threadId, int postId, int type) {
-    	Bundle args = new Bundle();
-        args.putInt(Constants.THREAD_ID, threadId);
-        args.putInt(Constants.EDITING, type);
-        args.putInt(Constants.POST_ID, postId);
-    	startActivityForResult(new Intent(this, PostReplyActivity.class).putExtras(args), PostReplyFragment.REQUEST_POST);
+    	startActivityForResult(
+                new Intent(this, PostReplyActivity.class)
+                    .putExtra(Constants.REPLY_THREAD_ID, threadId)
+                    .putExtra(Constants.EDITING, type)
+                    .putExtra(Constants.REPLY_POST_ID, postId),
+                PostReplyFragment.REQUEST_POST);
 	}
     
     public void setActionbarTitle(String aTitle, Object requestor) {

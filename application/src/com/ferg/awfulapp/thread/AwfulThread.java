@@ -47,8 +47,6 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.Shape;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Message;
@@ -94,12 +92,15 @@ public class AwfulThread extends AwfulPagedItem  {
 	public static final String FORUM_TITLE = "forum_title";
 	public static final String HAS_NEW_POSTS = "has_new_posts";
     public static final String HAS_VIEWED_THREAD = "has_viewed_thread";
+    public static final String ARCHIVED = "archived";
+	public static final String RATING = "rating";
 
     public static final String TAG_URL 		="tag_url";
     public static final String TAG_CACHEFILE 	="tag_cachefile";
 	
 	private static final Pattern forumId_regex = Pattern.compile("forumid=(\\d+)");
 	private static final Pattern urlId_regex = Pattern.compile("([^#]+)#(\\d+)$");
+
 	
     public static JSONObject getForumThreads(int aForumId, int aPage, Messenger statusCallback) throws Exception {
         HashMap<String, String> params = new HashMap<String, String>();
@@ -139,12 +140,14 @@ public class AwfulThread extends AwfulPagedItem  {
                 thread.put(POSTCOUNT, threadJSON.getInt("replycount")+1);
                 thread.put(TITLE, threadJSON.getString("title"));
 
+
                 thread.put(LOCKED,( ( threadJSON.getInt("open")==0 ) ? 1 : 0 ));
                 	
                 thread.put(LASTPOSTER, threadJSON.getString("lastposter"));
                 thread.put(STICKY,threadJSON.getInt("sticky"));
                 int threadIcon = threadJSON.getInt("iconid");
-                
+                thread.put(RATING, threadJSON.getInt("vote_score_average"));
+
 
 //                Elements tarIcon = node.getElementsByClass("icon");
 //                if (tarIcon.size() > 0 && tarIcon.first().getAllElements().size() >0) {
@@ -233,10 +236,11 @@ public class AwfulThread extends AwfulPagedItem  {
         
         ContentResolver contentResolv = aContext.getContentResolver();
 		Cursor threadData = contentResolv.query(ContentUris.withAppendedId(CONTENT_URI, aThreadId), AwfulProvider.ThreadProjection, null, null, null);
-    	int totalReplies = 0, unread = 0, opId = 0, bookmarkStatus = 0, hasViewedThread = 0;
+    	int totalReplies = 0, unread = 0, opId = 0, bookmarkStatus = 0, hasViewedThread = 0, postcount = 0;
 		if(threadData.moveToFirst()){
 			totalReplies = threadData.getInt(threadData.getColumnIndex(POSTCOUNT));
 			unread = threadData.getInt(threadData.getColumnIndex(UNREADCOUNT));
+            postcount = threadData.getInt(threadData.getColumnIndex(POSTCOUNT));
 			opId = threadData.getInt(threadData.getColumnIndex(AUTHOR_ID));
 			hasViewedThread = threadData.getInt(threadData.getColumnIndex(HAS_VIEWED_THREAD));
 			bookmarkStatus = threadData.getInt(threadData.getColumnIndex(BOOKMARKED));
@@ -254,7 +258,7 @@ public class AwfulThread extends AwfulPagedItem  {
         //notify user we have gotten message body, this represents a large portion of this function
         statusUpdates.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, aThreadId, 50));
         
-        String error = AwfulPagedItem.checkPageErrors(response, statusUpdates);
+        String error = AwfulPagedItem.checkPageErrors(response, statusUpdates, aPrefs);
         if(error != null){
         	return error;
         }
@@ -270,8 +274,9 @@ public class AwfulThread extends AwfulPagedItem  {
         	thread.put(LOCKED, 0);
         }
 
-        //TODO: no bookmarked indicator yet
-        thread.put(BOOKMARKED, 0);
+        thread.put(BOOKMARKED, response.getJSONObject("thread_info").isNull("bookmark_category")?0:1);
+		//TODO: no archived indicator yet
+		thread.put(ARCHIVED, 0);
 
     	thread.put(FORUM_ID, response.getInt("forumid"));
     	int lastPage = response.getJSONArray("page").getInt(1);
@@ -431,7 +436,7 @@ public class AwfulThread extends AwfulPagedItem  {
 
             buffer.append("<tr class='" + (post.isPreviouslyRead() ? "read" : "unread") + " phone " + post.getId() + "' id='" + post.getId() + "' >\n");
             buffer.append("    <td class='userinfo-row' style='width: 100%; color: "+ColorPickerPreference.convertToARGB(aPrefs.postHeaderFontColor)+"; border-color:"+ColorPickerPreference.convertToARGB(aPrefs.postDividerColor)+";background-color:"+(post.isOp()?ColorPickerPreference.convertToARGB(aPrefs.postOPColor):ColorPickerPreference.convertToARGB(aPrefs.postHeaderBackgroundColor))+"'>\n");
-            if(aPrefs.avatarsEnabled != false && post.getAvatar() != null && post.getAvatar().length()>0){
+            if((aPrefs.avatarsEnabled != false && post.getAvatar() != null && post.getAvatar().length()>0)){
 	            buffer.append("        <div class='avatar' style='background-image:url("+post.getAvatar()+");'>\n");
 	            buffer.append("        </div>\n");
             }
@@ -459,14 +464,16 @@ public class AwfulThread extends AwfulPagedItem  {
             if(post.getAvatarText()!= null){
             	buffer.append(post.getAvatarText()+"<br/>\n");
             }
-            if(post.isEditable()){
-            	buffer.append("        		<div class='"+(threadLocked?"":"edit_button ")+"inline-button' id='" + post.getId() + "' />\n");
-                buffer.append("        			<img src='file:///android_res/drawable/"+aPrefs.icon_theme+"_inline_edit.png' style='position:relative;vertical-align:middle;' /> "+(threadLocked?"Locked":"Edit"));
-                buffer.append("        		</div>\n");
+            if(!aPrefs.isOnProbation()){
+	            if(post.isEditable()){
+	            	buffer.append("        		<div class='"+(threadLocked?"":"edit_button ")+"inline-button' id='" + post.getId() + "' />\n");
+	                buffer.append("        			<img src='file:///android_res/drawable/"+aPrefs.icon_theme+"_inline_edit.png' style='position:relative;vertical-align:middle;' /> "+(threadLocked?"Locked":"Edit"));
+	                buffer.append("        		</div>\n");
+	            }
+	        	buffer.append("        		<div class='"+(threadLocked?"":"quote_button ")+"inline-button' id='" + post.getId() + "' />\n");
+	            buffer.append("        			<img src='file:///android_res/drawable/"+aPrefs.icon_theme+"_inline_quote.png' style='position:relative;vertical-align:middle;' /> "+(threadLocked?"Locked":"Quote"));
+	            buffer.append("\n        		</div>\n");
             }
-        	buffer.append("        		<div class='"+(threadLocked?"":"quote_button ")+"inline-button' id='" + post.getId() + "' />\n");
-            buffer.append("        			<img src='file:///android_res/drawable/"+aPrefs.icon_theme+"_inline_quote.png' style='position:relative;vertical-align:middle;' /> "+(threadLocked?"Locked":"Quote"));
-            buffer.append("\n        		</div>\n");
             buffer.append("        		<div class='lastread_button inline-button' lastreadurl='" + post.getLastReadUrl() + "' />\n");
             buffer.append("        			<img src='file:///android_res/drawable/"+aPrefs.icon_theme+"_inline_lastread.png' style='position:relative;vertical-align:middle;' />Last Read\n");
             buffer.append("        		</div>\n");
@@ -524,6 +531,7 @@ public class AwfulThread extends AwfulPagedItem  {
         return buffer.toString();
     }
 
+	@SuppressWarnings("deprecation")
 	public static void getView(View current, AwfulPreferences prefs, Cursor data, AQuery aq, boolean hideBookmark, boolean selected) {
 		aq.recycle(current);
 		TextView info = (TextView) current.findViewById(R.id.threadinfo);
@@ -531,6 +539,8 @@ public class AwfulThread extends AwfulPagedItem  {
 		ImageView bookmark = (ImageView) current.findViewById(R.id.bookmark_icon);
 		TextView title = (TextView) current.findViewById(R.id.title);
 		boolean stuck = data.getInt(data.getColumnIndex(STICKY)) >0;
+		info.setSingleLine(!prefs.wrapThreadTitles);
+		
 		if(stuck){
 			sticky.setImageResource(R.drawable.ic_sticky);
 			sticky.setVisibility(View.VISIBLE);
@@ -549,7 +559,7 @@ public class AwfulThread extends AwfulPagedItem  {
 			}
 		}
 
-		if(!prefs.threadInfo_Author && !prefs.threadInfo_Killed && !prefs.threadInfo_Page){
+		if(!prefs.threadInfo_Author && !prefs.threadInfo_Killed && !prefs.threadInfo_Page && !prefs.threadInfo_Rating){
 			info.setVisibility(View.GONE);
 		}else{
 			info.setVisibility(View.VISIBLE);
@@ -568,6 +578,33 @@ public class AwfulThread extends AwfulPagedItem  {
 					tmp.append(" | ");
 				}
 				tmp.append("OP: "+NetworkUtils.unencodeHtml(data.getString(data.getColumnIndex(AUTHOR))));
+			}
+			if(prefs.threadInfo_Rating && Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+				String tagFile = data.getString(data.getColumnIndex(TAG_CACHEFILE));
+				if(tagFile != null){
+					switch(data.getInt(data.getColumnIndex(RATING))){
+					case(1):
+						aq.id(R.id.thread_rating).visible().image("http://fi.somethingawful.com/rate/default/1stars.gif", true, true);
+						break;
+					case(2):
+						aq.id(R.id.thread_rating).visible().image("http://fi.somethingawful.com/rate/default/2stars.gif", true, true);
+						break;
+					case(3):
+						aq.id(R.id.thread_rating).visible().image("http://fi.somethingawful.com/rate/default/3stars.gif", true, true);
+						break;
+					case(4):
+						aq.id(R.id.thread_rating).visible().image("http://fi.somethingawful.com/rate/default/4stars.gif", true, true);
+						break;
+					case(5):
+						aq.id(R.id.thread_rating).visible().image("http://fi.somethingawful.com/rate/default/5stars.gif", true, true);
+						break;
+					default:
+						aq.id(R.id.thread_rating).gone();
+						break;
+					}
+				}else{
+					aq.id(R.id.thread_rating).gone();
+				}
 			}
 			info.setText(tmp.toString().trim());
 		}
@@ -616,14 +653,14 @@ public class AwfulThread extends AwfulPagedItem  {
 			unread.setText(unreadCount+"");
 			GradientDrawable counter = (GradientDrawable) current.getResources().getDrawable(R.drawable.unread_counter).mutate();
             counter.setColor(prefs.unreadCounterColor);
-            unread.setBackground(counter);
+            unread.setBackgroundDrawable(counter);
 		}
 		else if(hasViewedThread) {
 			unread.setVisibility(View.VISIBLE);
 			unread.setText(unreadCount+"");
 			GradientDrawable counter = (GradientDrawable) current.getResources().getDrawable(R.drawable.unread_counter).mutate();
             counter.setColor(prefs.unreadCounterColorDim);
-            unread.setBackground(counter);
+            unread.setBackgroundDrawable(counter);
         }
 		else {
 			unread.setVisibility(View.GONE);

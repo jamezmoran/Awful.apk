@@ -27,17 +27,8 @@
 
 package com.ferg.awfulapp;
 
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import android.app.AlertDialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.ContentUris;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
+import android.content.*;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
@@ -50,19 +41,11 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.text.Html;
 import android.util.Log;
-import android.view.ContextMenu;
+import android.view.*;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
+import android.view.View.OnClickListener;
+import android.widget.*;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
-
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
@@ -83,6 +66,9 @@ import com.handmark.pulltorefresh.library.PullToRefreshBase.Mode;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 /**
  * Uses intent extras:
  *  TYPE - STRING ID - DESCRIPTION
@@ -92,8 +78,6 @@ import com.handmark.pulltorefresh.library.PullToRefreshListView;
  *  Can also handle an HTTP intent that refers to an SA forumdisplay.php? url.
  */
 public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCallback {
-    private static final String TAG = "ForumDisplayFragment";
-    private static final boolean DEBUG = false;
     
     private PullToRefreshListView mPullRefreshListView;
     private ImageButton mRefreshBar;
@@ -101,6 +85,10 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
     private ImageButton mPrevPage;
     private TextView mPageCountText;
 	private ImageButton mToggleSidebar;
+	
+	private View mProbationBar;
+	private TextView mProbationMessage;
+	private ImageButton mProbationButton;
     
     private int mForumId;
     private int mPage = 1;
@@ -129,6 +117,10 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
         return fragment;
     }
 
+    public ForumDisplayFragment() {
+        TAG = "ForumDisplayFragment";
+    }
+
 	private AwfulCursorAdapter mCursorAdapter;
     private ForumContentsCallback mForumLoaderCallback = new ForumContentsCallback(mHandler);
     private ForumDataCallback mForumDataCallback = new ForumDataCallback(mHandler);
@@ -142,7 +134,6 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
     }
 	@Override
     public View onCreateView(LayoutInflater aInflater, ViewGroup aContainer, Bundle aSavedState) {
-		if(DEBUG) Log.e(TAG,"onCreateView");
         View result = inflateView(R.layout.forum_display, aContainer, aInflater);
     	mPullRefreshListView = (PullToRefreshListView) result.findViewById(R.id.forum_list);
         //mListView.setDrawingCacheEnabled(true);
@@ -183,12 +174,17 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 			}
 		}
 		updatePageBar();
+		mProbationBar = (View) result.findViewById(R.id.probationbar);
+		mProbationMessage = (TextView) result.findViewById(R.id.probation_message);
+		mProbationButton  = (ImageButton) result.findViewById(R.id.go_to_LC);
+		updateProbationBar();
+		
         return result;
     }
 
     @Override
     public void onActivityCreated(Bundle aSavedState) {
-        super.onActivityCreated(aSavedState); if(DEBUG) Log.e(TAG,"onActivityCreated");
+        super.onActivityCreated(aSavedState);
 
     	if(aSavedState != null){
         	Log.i(TAG,"Restoring state!");
@@ -220,7 +216,7 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
         mPullRefreshListView.setBackgroundColor(mPrefs.postBackgroundColor);
         mPullRefreshListView.getRefreshableView().setCacheColorHint(mPrefs.postBackgroundColor);
         
-        registerForContextMenu(mPullRefreshListView);
+        registerForContextMenu(mPullRefreshListView.getRefreshableView());
     }
 
 	public void updatePageBar(){
@@ -249,20 +245,35 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 			}else{
 				aq.find(R.id.move_up).invisible();
 			}
-
-			
 		}
+	}
+	
+	public void updateProbationBar(){
+		if(!mPrefs.isOnProbation()){
+			mProbationBar.setVisibility(View.GONE);
+			return;
+		}
+		mProbationBar.setVisibility(View.VISIBLE);
+		mProbationMessage.setText(String.format(this.getResources().getText(R.string.probation_message).toString(),new Date(mPrefs.probationTime).toLocaleString()));
+		mProbationButton.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent openThread = new Intent(Intent.ACTION_VIEW, Uri.parse(Constants.FUNCTION_BANLIST+'?'+Constants.PARAM_USER_ID+"="+mPrefs.userId));
+				startActivity(openThread);
+			}
+		});
 	}
 
     @Override
     public void onStart() {
-        super.onStart(); if(DEBUG) Log.e(TAG, "Start");
+        super.onStart();
 		refreshInfo();
     }
     
     @Override
     public void onResume() {
-        super.onResume(); if(DEBUG) Log.e(TAG, "Resume");
+        super.onResume();
         getActivity().getContentResolver().registerContentObserver(AwfulForum.CONTENT_URI, true, mForumDataCallback);
         getActivity().getContentResolver().registerContentObserver(AwfulThread.CONTENT_URI, true, mForumLoaderCallback);
         if(skipLoad || !isFragmentVisible()){
@@ -284,7 +295,7 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
     
     @Override
     public void onPause() {
-        super.onPause(); if(DEBUG) Log.e(TAG, "Pause");
+        super.onPause();
     }
     
     @Override
@@ -563,6 +574,7 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 		if(mPullRefreshListView!=null){
 			mPullRefreshListView.setBackgroundColor(prefs.postBackgroundColor);
 			mPullRefreshListView.setTextColor(prefs.postFontColor, prefs.postFontColor2);
+            //mPullRefreshListView.setHeaderBackgroundColor(mPrefs.postBackgroundColor2);
 			mPullRefreshListView.getRefreshableView().setCacheColorHint(prefs.postBackgroundColor);
 	        if(mPrefs.refreshFrog){
 	        	mPullRefreshListView.setLoadingDrawable(getResources().getDrawable(R.drawable.icon));
@@ -594,6 +606,7 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 		if(pageInt > 0 && pageInt <= mLastPage){
 			mPage = pageInt;
 			updatePageBar();
+			updateProbationBar();
 			refreshInfo();
 			syncForum();
 		}
@@ -604,6 +617,9 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 	}
     
     public void openForum(int id, int page){
+        if(id == mForumId && page == mPage){
+            return;
+        }
     	closeLoaders();
     	setForumId(id);//if the fragment isn't attached yet, just set the values and let the lifecycle handle it
     	mPage = page;
@@ -734,6 +750,7 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
         	}
 
 			updatePageBar();
+			updateProbationBar();
         }
         
         @Override
@@ -791,5 +808,27 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public boolean volumeScroll(KeyEvent event) {
+		int action = event.getAction();
+	    int keyCode = event.getKeyCode();    
+	        switch (keyCode) {
+	        case KeyEvent.KEYCODE_VOLUME_UP:
+	            if (action == KeyEvent.ACTION_DOWN && Constants.isFroyo()) {
+	            	mPullRefreshListView.setPullToRefreshOverScrollEnabled(false);
+	            	mPullRefreshListView.getRefreshableView().smoothScrollBy(-mPullRefreshListView.getHeight()/2, 0);
+	            	mPullRefreshListView.setPullToRefreshOverScrollEnabled(true);
+	            }
+	            return true;
+	        case KeyEvent.KEYCODE_VOLUME_DOWN:
+	            if (action == KeyEvent.ACTION_DOWN && Constants.isFroyo()) {
+	            	mPullRefreshListView.getRefreshableView().smoothScrollBy(mPullRefreshListView.getHeight()/2, 0);
+	            }
+	            return true;
+	        default:
+	            return false;
+	        }
 	}
 }

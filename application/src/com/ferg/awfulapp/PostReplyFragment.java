@@ -27,6 +27,8 @@
 
 package com.ferg.awfulapp;
 
+import java.io.File;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -48,6 +50,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -96,12 +99,6 @@ public class PostReplyFragment extends AwfulFragment implements OnClickListener 
     private ThreadDataCallback mThreadLoaderCallback;
     private ThreadContentObserver mThreadObserver = new ThreadContentObserver(mHandler);
 
-    public static PostReplyFragment newInstance(Bundle aArguments) {
-        PostReplyFragment fragment = new PostReplyFragment();
-        fragment.setArguments(aArguments);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
@@ -109,11 +106,14 @@ public class PostReplyFragment extends AwfulFragment implements OnClickListener 
         setHasOptionsMenu(true);
         setRetainInstance(false);
         mThreadLoaderCallback = new ThreadDataCallback();
-        
 
-        mReplyType = getArguments().getInt(Constants.EDITING, AwfulMessage.TYPE_NEW_REPLY);
-        mPostId = getArguments().getInt(Constants.POST_ID, 0);
-        mThreadId = getArguments().getInt(Constants.THREAD_ID, 0);
+        Intent intent = getActivity().getIntent();
+        mReplyType = intent.getIntExtra(Constants.EDITING, AwfulMessage.TYPE_NEW_REPLY);
+        mPostId = intent.getIntExtra(Constants.REPLY_POST_ID, 0);
+        mThreadId = intent.getIntExtra(Constants.REPLY_THREAD_ID, 0);
+        if(mPostId == 0 && mThreadId == 0){
+            getActivity().finish();
+        }
     }
     
     @Override
@@ -148,8 +148,21 @@ public class PostReplyFragment extends AwfulFragment implements OnClickListener 
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == ADD_ATTACHMENT) {
                 Uri selectedImageUri = data.getData();
-                mFileAttachment = getFilePath(selectedImageUri);
-                Toast attachmentToast = Toast.makeText(this.getActivity(), String.format(this.getString(R.string.file_attached), mFileAttachment), Toast.LENGTH_LONG);
+                File attachment = new File(getFilePath(selectedImageUri));
+                Toast attachmentToast;
+                if(attachment.isFile() && attachment.canRead()){
+                	if(attachment.length()>1048576){
+                		attachmentToast = Toast.makeText(this.getActivity(), String.format(this.getString(R.string.file_too_big), attachment.getName()), Toast.LENGTH_LONG);
+                		mFileAttachment = null;
+                	}else{
+                		mFileAttachment = getFilePath(selectedImageUri);
+                		attachmentToast = Toast.makeText(this.getActivity(), String.format(this.getString(R.string.file_attached), attachment.getName()), Toast.LENGTH_LONG);
+                	}
+                }else{
+                	attachmentToast = Toast.makeText(this.getActivity(), String.format(this.getString(R.string.file_unreadable), attachment.getName()), Toast.LENGTH_LONG);
+                	mFileAttachment = null;
+                }
+
                 attachmentToast.show();
                 this.getAwfulActivity().invalidateOptionsMenu();
             }
@@ -545,7 +558,7 @@ public class PostReplyFragment extends AwfulFragment implements OnClickListener 
                 		mDialog = ProgressDialog.show(getActivity(), "Posting", "Hopefully it didn't suck...", true, true);
                 	}
                     saveReply();
-                    ((AwfulActivity) getActivity()).sendMessage(mMessenger, AwfulSyncService.MSG_SEND_POST, mThreadId, mPostId, new Integer(mReplyType));
+                    sendPost();
                 }
             })
         .setNegativeButton(R.string.draft_alert_discard, new DialogInterface.OnClickListener() {
@@ -561,6 +574,10 @@ public class PostReplyFragment extends AwfulFragment implements OnClickListener 
             }
         })
         .show();
+    }
+
+    private void sendPost(){
+        ((AwfulActivity) getActivity()).sendMessage(mMessenger, AwfulSyncService.MSG_SEND_POST, mThreadId, mPostId, new Integer(mReplyType));
     }
     
     private void deleteReply(){
@@ -768,5 +785,11 @@ public class PostReplyFragment extends AwfulFragment implements OnClickListener 
 	@Override
 	public String getInternalId() {
 		return TAG;
+	}
+
+	@Override
+	public boolean volumeScroll(KeyEvent event) {
+		//I don't think that's necessary
+		return false;
 	}
 }

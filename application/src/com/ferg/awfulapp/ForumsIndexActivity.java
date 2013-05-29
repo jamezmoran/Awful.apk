@@ -28,13 +28,17 @@
 package com.ferg.awfulapp;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.Preference;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.ViewGroup;
 
 import com.actionbarsherlock.view.MenuItem;
@@ -46,10 +50,7 @@ import com.ferg.awfulapp.widget.AwfulFragmentPagerAdapter.AwfulPagerFragment;
 import com.ferg.awfulapp.widget.AwfulViewPager;
 
 public class ForumsIndexActivity extends AwfulActivity {
-
-    private boolean DEVELOPER_MODE = false;
-    private boolean DEBUG = false;
-    private static final String TAG = "ForumsIndexActivity";
+    protected static String TAG = "ForumsIndexActivity";
 
     private boolean mSecondPane;
     private ForumsIndexFragment mIndexFragment = null;
@@ -113,7 +114,7 @@ public class ForumsIndexActivity extends AwfulActivity {
 
 	@Override
 	protected void onNewIntent(Intent intent) {
-		super.onNewIntent(intent);
+		super.onNewIntent(intent); if(DEBUG) Log.e(TAG, "onNewIntent");
 		setIntent(intent);
 		int initialPage = parseNewIntent(intent);
 		if(mViewPager != null && pagerAdapter != null && pagerAdapter.getCount() >= initialPage && initialPage >= 0){
@@ -169,7 +170,49 @@ public class ForumsIndexActivity extends AwfulActivity {
         return initialPage;
 	}
 
-	@Override
+    @Override
+    protected void onResume() {
+        super.onResume();
+        switch(mPrefs.alertIDShown+1){
+            case 1:
+                if(Constants.isHoneycomb()){
+                    new AlertDialog.Builder(this).
+                            setTitle(getString(R.string.alert_title_1))
+                            .setMessage(getString(R.string.alert_message_1))
+                            .setPositiveButton(getString(R.string.alert_ok), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .setNegativeButton(getString(R.string.alert_settings), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    startActivity(new Intent().setClass(ForumsIndexActivity.this, SettingsActivity.class));
+                                }
+                            })
+                            .show();
+                }
+                mPrefs.setIntegerPreference("alert_id_shown", 1);
+                break;
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mForumFragment != null){
+            mForumId = mForumFragment.getForumId();
+            mForumPage = mForumFragment.getPage();
+        }
+        if(mThreadFragment != null){
+            mThreadId = mThreadFragment.getThreadId();
+            mThreadPage = mThreadFragment.getPage();
+        }
+    }
+
+    @Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		if(mForumFragment != null){
@@ -190,7 +233,24 @@ public class ForumsIndexActivity extends AwfulActivity {
             }
         }
     }
-    
+
+    public int getThreadId() {
+        return mThreadId;
+    }
+
+    public int getThreadPage() {
+        return mThreadPage;
+    }
+
+
+    public void setThreadId(int threadId) {
+        mThreadId = threadId;
+    }
+
+    public void setThreadPage(int page) {
+        mThreadPage = page;
+    }
+
     public class ForumPagerAdapter extends AwfulFragmentPagerAdapter implements AwfulViewPager.OnPageChangeListener{
     	public ForumPagerAdapter(FragmentManager fm, boolean tabletMode) {
 			super(fm, tabletMode);
@@ -201,7 +261,7 @@ public class ForumsIndexActivity extends AwfulActivity {
 
 		@Override
 		public Object instantiateItem(ViewGroup container, int position) {
-			if(DEBUG) Log.i(TAG,"INSTANTIATING TAB:"+position);
+			if(DEBUG) Log.w(TAG,"INSTANTIATING TAB:"+position);
 			Object item = super.instantiateItem(container, position);
 			Fragment[] frags;
 			if(item instanceof Fragment){
@@ -249,6 +309,7 @@ public class ForumsIndexActivity extends AwfulActivity {
 
 		@Override
 		protected Fragment resolveConflict(int position, Fragment oldFrag, Fragment newFrag) {
+            if(DEBUG) Log.e(TAG, "resolveConflict - old: " + oldFrag.toString() + " - new: " + newFrag.toString());
 			return newFrag;//just dump the old fragment and replace it
 		}
     	
@@ -258,8 +319,9 @@ public class ForumsIndexActivity extends AwfulActivity {
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
 		if(pagerAdapter != null && mPrefs != null){
-	        isTablet = !mPrefs.threadLayout.equalsIgnoreCase("phone") && 
+	        isTablet = !mPrefs.threadLayout.equalsIgnoreCase("phone") &&
 	        		(mPrefs.threadLayout.equalsIgnoreCase("tablet") || Constants.isWidescreen(newConfig));
+            if(DEBUG) Log.e(TAG,"onConfigurationChanged "+(isTablet? "isTablet":""));
 			pagerAdapter.setWidescreen(isTablet);
 		}
 	}
@@ -282,6 +344,7 @@ public class ForumsIndexActivity extends AwfulActivity {
 	@Override
     public void onBackPressed() {
     	if(mViewPager != null && mViewPager.getCurrentItem() > 0){
+            if(DEBUG) Log.e(TAG,"onBackPressed: "+mViewPager.getCurrentItem()+" - size: "+pagerAdapter.getCount());
     		if(!pagerAdapter.getItem(mViewPager.getCurrentItem()).onBackPressed()){
     			mViewPager.setCurrentItem(mViewPager.getCurrentItem()-1);
     		}
@@ -289,80 +352,18 @@ public class ForumsIndexActivity extends AwfulActivity {
     		finish();
     	}
     }
-
-    public boolean isDualPane() {
-        return mSecondPane;
-    }
     
     @Override
     public void displayForum(int id, int page){
     	setContentPane(id, page);
     	if (mViewPager != null) {
-    		closeTempWindows(); 
     		mViewPager.setCurrentItem(pagerAdapter.getRealItemPosition(mForumFragment));
         }
-    }
-
-    @Override
-	public void displayQuickBrowser(String url) {
-    	if(mViewPager != null){
-    		AwfulPagerFragment apf = pagerAdapter.getItem(pagerAdapter.getCount()-1);
-    		if(apf instanceof AwfulWebFragment){
-    			((AwfulWebFragment) apf).loadUrl(url);
-    			mViewPager.setCurrentItem(pagerAdapter.getCount()-1);
-    		}else{
-    			pagerAdapter.addFragment(AwfulWebFragment.newInstance(url));
-    			mViewPager.setCurrentItem(pagerAdapter.getCount()-1);
-    		}
-    	}else{
-    		super.displayQuickBrowser(url);
-    	}
-	}
-
-    /*revert slider reply window I guess.
-	public void displayReplyWindow(int threadId, int postId, int type) {
-    	if(mViewPager != null){
-    		if(mReplyFragment != null){
-    			//TODO multiquote stuff
-    			//mReplyFragment.multiQuote(postId);
-    			mReplyFragment.newReply(threadId, postId, type);
-    			pagerAdapter.addFragment(mReplyFragment);
-    			Log.e(TAG,"Reusing existing reply: "+threadId+" - "+postId+" - "+ type);
-    		}else{
-    	    	Bundle args = new Bundle();
-    	        args.putInt(Constants.THREAD_ID, threadId);
-    	        args.putInt(Constants.EDITING, type);
-    	        args.putInt(Constants.POST_ID, postId);
-    			Log.e(TAG,"New reply: "+threadId+" - "+postId+" - "+ type);
-    			pagerAdapter.addFragment(PostReplyFragment.newInstance(args));
-    		}
-    		mHandler.post(new Runnable(){
-				@Override
-				public void run() {
-					//so it seems if you setCurrentItem() while an ActionbarSherlock submenu is visible, you'll crash. good to know.
-	    			mViewPager.setCurrentItem(pagerAdapter.getCount()-1);
-				}
-    		});
-    	}else{
-    		super.displayReplyWindow(threadId, postId, type);
-    	}
-	}
-     */
-    
-    private void closeTempWindows(){
-    	if(mViewPager != null){
-    		for(int ix=0; ix<pagerAdapter.getCount(); ix++){
-    			if(pagerAdapter.getItem(ix) instanceof ThreadDisplayFragment){//close anything after the thread display fragment
-    				while(pagerAdapter.getCount() > ix+1){
-    					pagerAdapter.deletePage(ix+1);
-    				}
-    			}
-    		}
-    	}
     }
     
 	@Override
 	public void fragmentClosing(AwfulFragment fragment) {
+        if(DEBUG) Log.e(TAG,"fragmentClosing: "+fragment.toString());
 		if(pagerAdapter != null){
 			pagerAdapter.deleteFragment(fragment);
 		}
@@ -411,7 +412,6 @@ public class ForumsIndexActivity extends AwfulActivity {
     @Override
     public void displayThread(int id, int page, int forumId, int forumPg){
     	if(mViewPager != null){
-    		closeTempWindows();
     		mThreadId = id;
     		mThreadPage = page;
     		if(mThreadFragment != null){
@@ -442,7 +442,7 @@ public class ForumsIndexActivity extends AwfulActivity {
 
     @Override
 	protected void onActivityResult(int request, int result, Intent intent) {
-    	Log.e(TAG,"onActivityResult: " + request+" result: "+result);
+    	if(DEBUG) Log.e(TAG,"onActivityResult: " + request+" result: "+result);
 		super.onActivityResult(request, result, intent);
 		if(request == Constants.LOGIN_ACTIVITY_REQUEST && result == Activity.RESULT_OK){
 			mHandler.postDelayed(new Runnable() {
@@ -477,6 +477,13 @@ public class ForumsIndexActivity extends AwfulActivity {
 		}
 	}
     
-    
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+    	// TODO Auto-generated method stub
+    	if(mPrefs.volumeScroll && pagerAdapter.getItem(mViewPager.getCurrentItem()) != null && pagerAdapter.getItem(mViewPager.getCurrentItem()).volumeScroll(event)){
+    		return true;
+    	}
+    	return super.dispatchKeyEvent(event);
+    }
 }
 

@@ -34,12 +34,16 @@ import android.util.Log;
 import android.util.TypedValue;
 
 public class Constants {
+	public static final boolean DEBUG = false;
 	
 	public static final String BASE_URL_BASE = "forums.somethingawful.com";
     public static final String BASE_URL_NORMAL = "http://" + BASE_URL_BASE;
+    public static final String BASE_URL_NORMAL_SSL = "https://" + BASE_URL_BASE;
     public static final String BASE_URL = "http://dev." + BASE_URL_BASE;
 
     public static final String FUNCTION_LOGIN           = BASE_URL_NORMAL + "/account.php";
+    public static final String FUNCTION_LOGIN_SSL           = BASE_URL_NORMAL_SSL + "/account.php";
+
     public static final String FUNCTION_BOOKMARK        = BASE_URL + "/bookmarkthreads.php";
     public static final String FUNCTION_USERCP          = BASE_URL + "/usercp.php";
     public static final String FUNCTION_FORUM           = BASE_URL + "/forumdisplay.php";
@@ -164,10 +168,13 @@ public class Constants {
 	
 	public static final int WIDESCREEN_DPI = 700;//everything above this is considered tablet layout
 
+    public static final String REPLY_POST_ID = "reply_post_id";
+    public static final String REPLY_THREAD_ID = "reply_thread_id";
+    
+    public static final int AWFUL_THREAD_ID = 3391052;
 
 
-
-	/**
+    /**
 	 * I guess this should really be named "isFroyoOrAbove()" but I suck at function naming.
 	 * @return
 	 */
@@ -182,6 +189,9 @@ public class Constants {
 	}
 	public static boolean isICS(){
 		return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
+	}
+	public static boolean isJellybean(){
+		return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
 	}
 	
 	public static boolean isWidescreen(Context cont){

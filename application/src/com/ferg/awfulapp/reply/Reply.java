@@ -61,7 +61,7 @@ public class Reply {
     private static final String VALUE_POSTID      = "";
     private static final String VALUE_FORM_COOKIE = "formcookie";
 
-    public static final Document edit(String aMessage, String aFormKey, String aFormCookie, String aThreadId, String aPostId, String aAttachment) 
+    public static final Document edit(String aMessage, String aFormKey, String aFormCookie, String aThreadId, String aPostId, String aBookmark, String aAttachment) 
         throws Exception 
     {
         HashMap<String, String> params = new HashMap<String, String>();
@@ -71,7 +71,9 @@ public class Reply {
         params.put(PARAM_FORMKEY, aFormKey);
         params.put(PARAM_FORM_COOKIE, aFormCookie);
         params.put(PARAM_MESSAGE, aMessage);
-        params.put(PARAM_BOOKMARK, "yes");
+        if(aBookmark.equals("checked")){
+            params.put(PARAM_BOOKMARK, Constants.YES);
+        }
         params.put(Constants.PARAM_PARSEURL, Constants.YES);
         if(aAttachment != null){
         	params.put(PARAM_ATTACHMENT, aAttachment);
@@ -80,7 +82,7 @@ public class Reply {
         return NetworkUtils.post(Constants.FUNCTION_EDIT_POST, params);
     }
 
-    public static final Document post(String aMessage, String aFormKey, String aFormCookie, String aThreadId, String aAttachment) 
+    public static final Document post(String aMessage, String aFormKey, String aFormCookie, String aThreadId, String aBookmark, String aAttachment) 
         throws Exception 
     {
         HashMap<String, String> params = new HashMap<String, String>();
@@ -90,6 +92,9 @@ public class Reply {
         params.put(PARAM_FORMKEY, aFormKey);
         params.put(PARAM_FORM_COOKIE, aFormCookie);
         params.put(PARAM_MESSAGE, aMessage);
+        if(aBookmark.equals("checked")){
+            params.put(PARAM_BOOKMARK, Constants.YES);
+        }
         params.put(Constants.PARAM_PARSEURL, Constants.YES);
         if(aAttachment != null){
         	params.put(PARAM_ATTACHMENT, aAttachment);
@@ -122,6 +127,7 @@ public class Reply {
         params.put(PARAM_THREADID, Integer.toString(threadId));
         JSONObject response = NetworkUtils.get(Constants.FUNCTION_POST_REPLY, params);
         getReplyData(response, newReply);
+        newReply.put(AwfulPost.FORM_BOOKMARK, getBookmarkOption(response));
         
     	return newReply;
     }
@@ -135,6 +141,7 @@ public class Reply {
         params.put(PARAM_POSTID, Integer.toString(postId));
         JSONObject response = NetworkUtils.get(Constants.FUNCTION_POST_REPLY, params);
         getReplyData(response, quote);
+        quote.put(AwfulPost.FORM_BOOKMARK, getBookmarkOption(response));
         quote.put(AwfulMessage.REPLY_CONTENT, getMessageContent(response));
         quote.put(AwfulPost.REPLY_ORIGINAL_CONTENT, quote.getAsString(AwfulMessage.REPLY_CONTENT));
     	return quote;
@@ -149,6 +156,7 @@ public class Reply {
         params.put(PARAM_POSTID, Integer.toString(postId));
         JSONObject response = NetworkUtils.get(Constants.FUNCTION_EDIT_POST, params);
         edit.put(AwfulMessage.REPLY_CONTENT, getMessageContent(response));
+        edit.put(AwfulPost.FORM_BOOKMARK, getBookmarkOption(response));
         edit.put(AwfulPost.REPLY_ORIGINAL_CONTENT, edit.getAsString(AwfulMessage.REPLY_CONTENT));
         edit.put(AwfulPost.EDIT_POST_ID, postId);
     	return edit;
@@ -157,18 +165,20 @@ public class Reply {
     public static final String getMessageContent(JSONObject response) throws Exception{
         return response.getString("text");
     }
+    
+    public static final String getBookmarkOption(Document data){
+    	Element formBookmark = data.getElementsByAttributeValue("name", "bookmark").first();
+    	if(formBookmark.hasAttr("checked")){
+    		return "checked";
+    	}else{
+    		return "";
+    	}
+    }
 
     public static final ContentValues getReplyData(JSONObject response, ContentValues results) throws Exception {
     	results.put(AwfulPost.FORM_KEY, response.getString("formkey"));
     	results.put(AwfulPost.FORM_COOKIE, response.getString("form_cookie"));
         return results;
     }
-    
-    public static final ContentValues getReplyDataJSoup(Document data, ContentValues results) throws Exception {
-    	Element formKey = data.getElementsByAttributeValue("name", "formkey").first();
-    	Element formCookie = data.getElementsByAttributeValue("name", "form_cookie").first();
-    	results.put(AwfulPost.FORM_KEY, formKey.val());
-    	results.put(AwfulPost.FORM_COOKIE, formCookie.val());
-        return results;
-    }
+
 }

@@ -43,7 +43,6 @@ import com.ferg.awfulapp.preferences.AwfulPreferences;
 import com.ferg.awfulapp.service.AwfulSyncService;
 import com.ferg.awfulapp.thread.AwfulForum;
 import com.ferg.awfulapp.thread.AwfulPagedItem;
-import com.ferg.awfulapp.widget.AwfulFragmentPagerAdapter.AwfulPagerFragment;
 
 public class IndexTask extends AwfulTask {
 
@@ -56,8 +55,10 @@ public class IndexTask extends AwfulTask {
 		if (!isCancelled()) {
             try {
                 replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, 0, 10));
+
                 JSONObject response = NetworkUtils.get(Constants.BASE_URL + "/");
-                String error = AwfulPagedItem.checkPageErrors(response, replyTo);
+                String error = AwfulPagedItem.checkPageErrors(response, replyTo, mPrefs);
+
                 if(error != null){
                 	return error;
                 }

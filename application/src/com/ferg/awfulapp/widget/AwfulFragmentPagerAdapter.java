@@ -25,8 +25,11 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.ferg.awfulapp.constants.Constants;
 
 /**
  * Implementation of {@link android.support.v4.view.PagerAdapter} that
@@ -67,7 +70,7 @@ import android.view.ViewGroup;
 public abstract class AwfulFragmentPagerAdapter extends AwfulPagerAdapter implements Iterable<AwfulFragmentPagerAdapter.AwfulPagerFragment> {
 
 	private static final String TAG = "FragmentPagerAdapter";
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = Constants.DEBUG;
     
     private boolean splitMode = false;
 
@@ -165,6 +168,7 @@ public abstract class AwfulFragmentPagerAdapter extends AwfulPagerAdapter implem
     	public void fragmentMessage(String type, String contents);
     	public boolean canSplitscreen();
 		public String getInternalId();
+		public boolean volumeScroll(KeyEvent event);
     }
 
     @Override
@@ -230,7 +234,7 @@ public abstract class AwfulFragmentPagerAdapter extends AwfulPagerAdapter implem
         	listFragment.setUserVisibleHint(false);
         }
 
-        if (DEBUG) Log.w(TAG, "instantiated" + position + ": f=" + listItem+" - c: "+container);
+        if (DEBUG) Log.w(TAG, "instantiated " + position + ": f=" + listItem+" - c: "+container);
         return listItem;
     }
 
@@ -327,7 +331,9 @@ public abstract class AwfulFragmentPagerAdapter extends AwfulPagerAdapter implem
     	String name = "null";
     	if(fragment instanceof AwfulPagerFragment){
     		return "android:switcher:" + ((AwfulPagerFragment)fragment).getInternalId();
-    	}
+    	}else{
+            Log.e(TAG, "makeFragmentName - INVALID FRAGMENT");
+        }
     	if(DEBUG) Log.e(TAG, "makeFragmentName "+name);
 		return name;
     }

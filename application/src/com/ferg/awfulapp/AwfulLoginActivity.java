@@ -34,11 +34,12 @@ import android.app.ProgressDialog;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Messenger;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnKeyListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -50,6 +51,7 @@ import android.widget.Toast;
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.network.NetworkUtils;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
+import com.ferg.awfulapp.service.AwfulSyncService;
 
 public class AwfulLoginActivity extends AwfulActivity {
     private static final String TAG = "LoginActivity";
@@ -151,7 +153,7 @@ public class AwfulLoginActivity extends AwfulActivity {
 	private void loginClick(){
         String username = mUsername.getText().toString();
         String password = mPassword.getText().toString();
-        
+
         mLoginTask = new LoginTask();
         mLoginTask.execute(new String[] {username, password});
     }
@@ -178,7 +180,7 @@ public class AwfulLoginActivity extends AwfulActivity {
                 params.put(Constants.PARAM_ACTION, "login");
 
                 try {
-                    NetworkUtils.post(Constants.FUNCTION_LOGIN, params);
+                    NetworkUtils.post(Constants.FUNCTION_LOGIN_SSL, params);
                     result = NetworkUtils.saveLoginCookies(AwfulLoginActivity.this);
 
                     // Write username to preferences for SALR features
@@ -204,6 +206,7 @@ public class AwfulLoginActivity extends AwfulActivity {
 
                 if(succeeded) {
                     setResult(Activity.RESULT_OK);
+                    sendMessage(new Messenger(new Handler()), AwfulSyncService.MSG_FETCH_FEATURES, 0, 0);
                     finish();
                 } else {
                     setResult(Activity.RESULT_CANCELED);

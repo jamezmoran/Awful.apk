@@ -8,7 +8,6 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ferg.awfulapp.constants.Constants;
-import com.ferg.awfulapp.network.NetworkUtils;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
 import com.ferg.awfulapp.provider.AwfulProvider;
 import com.ferg.awfulapp.service.AwfulSyncService;
@@ -18,7 +17,6 @@ import com.ferg.awfulapp.thread.AwfulThread;
 
 public class ForumTask extends AwfulTask {
 	private final static String TAG = "ForumTask";
-	
 
 	public ForumTask(AwfulSyncService sync, Message msg, AwfulPreferences aPrefs) {
 		super(sync, msg, aPrefs, AwfulSyncService.MSG_SYNC_FORUM);
@@ -32,7 +30,7 @@ public class ForumTask extends AwfulTask {
             if(mId == Constants.USERCP_ID){
             	threads = AwfulThread.getUserCPThreads(mArg1, replyTo);
                 replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, mId, 75));
-                String error = AwfulPagedItem.checkPageErrors(threads, replyTo);
+                String error = AwfulPagedItem.checkPageErrors(threads, replyTo, mPrefs);
                 if(error != null){
                 	return error;
                 }
@@ -40,7 +38,7 @@ public class ForumTask extends AwfulTask {
             }else{
             	threads = AwfulThread.getForumThreads(mId, mArg1, replyTo);
                 replyTo.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, mId, 75));
-                String error = AwfulPagedItem.checkPageErrors(threads, replyTo);
+                String error = AwfulPagedItem.checkPageErrors(threads, replyTo, mPrefs);
                 if(error != null){
                 	Log.e(TAG,"Parsing Failed: "+error);
                 	return error;

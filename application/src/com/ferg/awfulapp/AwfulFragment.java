@@ -43,13 +43,16 @@ import com.actionbarsherlock.view.ActionMode;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.androidquery.AQuery;
+import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
 import com.ferg.awfulapp.service.AwfulSyncService;
-import com.ferg.awfulapp.widget.AwfulProgressBar;
 import com.ferg.awfulapp.widget.AwfulFragmentPagerAdapter.AwfulPagerFragment;
+import com.ferg.awfulapp.widget.AwfulProgressBar;
 
 public abstract class AwfulFragment extends SherlockFragment implements AwfulUpdateCallback, AwfulPagerFragment, ActionMode.Callback{
-	protected static String TAG = "AwfulFragment";
+	protected String TAG = "AwfulFragment";
+    protected static final boolean DEBUG = Constants.DEBUG;
+
 	protected AwfulPreferences mPrefs;
 	protected AQuery aq;
 	protected int currentProgress = 100;
@@ -90,7 +93,7 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
     
     @Override
     public void onAttach(Activity aActivity) {
-    	super.onAttach(aActivity);
+    	super.onAttach(aActivity); if(DEBUG) Log.e(TAG, "onAttach");
     	if(!(aActivity instanceof AwfulActivity)){
     		Log.e("AwfulFragment","PARENT ACTIVITY NOT EXTENDING AwfulActivity!");
     	}
@@ -109,18 +112,48 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
     
 	@Override
 	public void onActivityCreated(Bundle aSavedState) {
-		super.onActivityCreated(aSavedState);
+		super.onActivityCreated(aSavedState); if(DEBUG) Log.e(TAG, "onActivityCreated");
 		onPreferenceChange(mPrefs);
 		if(mProgressBar != null){
 			mProgressBar.setBackgroundColor(mPrefs.actionbarColor);
 		}
 	}
-    
+
+    @Override
+    public void onStart() {
+        super.onStart(); if(DEBUG) Log.e(TAG, "onStart");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume(); if(DEBUG) Log.e(TAG, "onResume");
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause(); if(DEBUG) Log.e(TAG, "onPause");
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState); if(DEBUG) Log.e(TAG,"onSaveInstanceState");
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop(); if(DEBUG) Log.e(TAG, "onStop");
+    }
+
     @Override
     public void onDestroy() {
-    	super.onDestroy();
+    	super.onDestroy(); if(DEBUG) Log.e(TAG, "onDestroy");
         mPrefs.unregisterCallback(this);
         mPrefs.unRegisterListener();
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach(); if(DEBUG) Log.e(TAG, "onDetach");
     }
     
     protected void displayForumIndex(){
