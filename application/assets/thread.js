@@ -117,10 +117,10 @@ $(document).ready(function() {
 
 
 
-$(window).load(function() {
-	// listener.debugMessage('load');
-	// window.stop();
-});
+//$(window).load(function() {
+//	// listener.debugMessage('load');
+//	// window.stop();
+//});
 
 
 
@@ -235,9 +235,9 @@ function refreshHidden(){
 	}
 }
 
-function replaceImage(url, data){
-	Console.Log(url);
+function replaceImage(url){
+	console.log("replaceImage: "+url);
 	$("img[src='"+url+"']").each(function(){
-		$(this).src("data:image/gif;base64,"+data);
+		$(this).attr("src","data:image/png;base64,"+listener.getBase64Image(url));
 	});
 }

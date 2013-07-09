@@ -183,16 +183,16 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view,final String url) {
         	if(DEBUG) Log.e(TAG, "Opening Connection: "+url);
-            if(mPrefs.disableGifs && url != null && url.contains(".gif") && !url.contains("ytimg.") && !(!mPrefs.imgurThumbnails.equalsIgnoreCase("d") && url.contains("http://i.imgur.com/"))){
+            if(mPrefs.disableGifs && url != null && !url.startsWith("data:image") && url.contains(".gif") && !url.contains("ytimg.") && !(!mPrefs.imgurThumbnails.equalsIgnoreCase("d") && url.contains("http://i.imgur.com/"))){
             	
             	Listener<Bitmap> Paul = new Listener<Bitmap>(){
 
 					@Override
 					public void onResponse(Bitmap response) {
 						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-						response.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+						response.compress(Bitmap.CompressFormat.PNG, 0, byteArrayOutputStream);
 						byte[] buffer = byteArrayOutputStream.toByteArray();
-						String base64 = Base64.encodeToString(buffer,Base64.DEFAULT);
+						String base64 = Base64.encodeToString(buffer, 0, buffer.length, Base64.DEFAULT);
 						insertBase64(url, base64);
 					}
             		
@@ -1337,6 +1337,13 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
         	scrollCheckBounds[scrollCheckBounds.length-1] = max;
         	Arrays.sort(scrollCheckBounds);
         }
+        
+        final public HashMap<String, String> urlBase64 = new HashMap<String, String>();
+        
+
+        public String getBase64Image(String url){
+            return urlBase64.get(url);
+        }
 
     }
     
@@ -1877,10 +1884,8 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 	}
     
     protected void insertBase64(String url, String base64){
-    	System.out.println(url+": "+url.hashCode());
-    	mThreadView.addJavascriptInterface(base64, "fake"+url.hashCode());
-    	webView.loadData("", "text/html", null);
-    	mThreadView.loadUrl("javascript:replaceImage('"+url+"',fake"+url.hashCode()+");");
+    	clickInterface.urlBase64.put(url, base64);
+    	mThreadView.loadUrl("javascript:replaceImage('"+url+"');");
     }
     
     private void loadImage(String url, ImageListener heyListen){
