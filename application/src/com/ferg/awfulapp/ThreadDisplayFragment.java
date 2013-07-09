@@ -38,12 +38,15 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.net.Uri;
 import android.os.*;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.text.format.DateFormat;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -60,6 +63,12 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.widget.ShareActionProvider;
+import com.android.volley.VolleyError;
+import com.android.volley.Response.Listener;
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.ImageLoader.ImageListener;
+import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.toolbox.ImageLoader.ImageContainer;
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.network.NetworkUtils;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
@@ -77,13 +86,16 @@ import com.handmark.pulltorefresh.library.PullToRefreshWebView;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.Normalizer.Form;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -149,6 +161,8 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 	private ShareActionProvider shareProvider;
 
     private ForumsIndexActivity parent;
+    
+    protected ThreadDisplayFragment mSelf = this;
 
     public static ThreadDisplayFragment newInstance(int id, int page) {
 		ThreadDisplayFragment fragment = new ThreadDisplayFragment();
@@ -164,32 +178,32 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     
 	
 	private WebViewClient callback = new WebViewClient(){
-        String lastUrl="";
         
+
         @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        public WebResourceResponse shouldInterceptRequest(WebView view,final String url) {
         	if(DEBUG) Log.e(TAG, "Opening Connection: "+url);
-            if(mPrefs.disableGifs && url != null && url.endsWith(".gif")){
+            if(mPrefs.disableGifs && url != null && url.contains(".gif") && !url.contains("ytimg.") && !(!mPrefs.imgurThumbnails.equalsIgnoreCase("d") && url.contains("http://i.imgur.com/"))){
+            	
+            	Listener<Bitmap> Paul = new Listener<Bitmap>(){
+
+					@Override
+					public void onResponse(Bitmap response) {
+						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+						response.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+						byte[] buffer = byteArrayOutputStream.toByteArray();
+						String base64 = Base64.encodeToString(buffer,Base64.DEFAULT);
+						insertBase64(url, base64);
+					}
+            		
+				};
+				queueRequest(new ImageRequest(url, Paul, 0, 0, Config.RGB_565, getErrorListener()), true);
+				
                 try {
-                    if(DEBUG) Log.e(TAG, "Opening Connection: "+url);
-                    URL target = new URL(url);
-                    URLConnection response = target.openConnection();
-                    response.setReadTimeout(5000);
-                    response.setConnectTimeout(1000);
-                    response.connect();
-                    if(DEBUG) Log.e(TAG, "Connected - Type: "+response.getContentType()+" - Encoding: "+response.getContentEncoding());
-                    return new WebResourceResponse(response.getContentType(), response.getContentEncoding(), new AwfulGifStripper(response.getInputStream(), target.getFile()));
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (FileNotFoundException e) {
-                	if(!lastUrl.equals(url)){
-                        mThreadView.clearCache(true);
-                        lastUrl=url;
-                        return shouldInterceptRequest(view, url);                		
-                	}
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+					return new WebResourceResponse("image/gif", "image", parent.getAssets().open("gif.png"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
             }
             return super.shouldInterceptRequest(view, url);
         }
@@ -1861,4 +1875,16 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     	mThreadView.setKeepScreenOn(keepScreenOn);
 		Toast.makeText(getAwfulActivity(), keepScreenOn? "Screen stays on" :"Screen turns itself off", Toast.LENGTH_SHORT).show();
 	}
+    
+    protected void insertBase64(String url, String base64){
+    	System.out.println(url+": "+url.hashCode());
+    	mThreadView.addJavascriptInterface(base64, "fake"+url.hashCode());
+    	webView.loadData("", "text/html", null);
+    	mThreadView.loadUrl("javascript:replaceImage('"+url+"',fake"+url.hashCode()+");");
+    }
+    
+    private void loadImage(String url, ImageListener heyListen){
+        getImageLoader().get(url, heyListen);  
+    }
+      
 }

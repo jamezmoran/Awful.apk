@@ -73,7 +73,15 @@ import android.os.Build;
 import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
+import android.view.View;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response.ErrorListener;
+import com.android.volley.Response.Listener;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.ferg.awfulapp.AwfulApplication;
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.service.AwfulSyncService;
 import com.ferg.awfulapp.thread.AwfulURL;
@@ -86,6 +94,8 @@ public class NetworkUtils {
     private static final Pattern encodeCharactersPattern = Pattern.compile("([^\\x00-\\x7F])");
 
     private static DefaultHttpClient sHttpClient;
+    
+    private RequestQueue networkQueue = Volley.newRequestQueue(new AwfulApplication()); 
 
     /**
      * Attempts to initialize the HttpClient with cookie values
@@ -258,7 +268,25 @@ public class NetworkUtils {
 	public static Document get(URI location, Messenger statusCallback, int midpointPercent) throws Exception {
 		Document response = null;
         Log.i(TAG, "Fetching " + location);
+        ErrorListener Peter = new ErrorListener() {
 
+			@Override
+			public void onErrorResponse(VolleyError error) {
+				// TODO Auto-generated method stub
+				
+			}
+
+		};
+		Listener<String> Patrick = new Listener<String>() {
+
+			@Override
+			public void onResponse(String response) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+        StringRequest request = new StringRequest(location.toASCIIString(), Patrick, Peter);
+        
         HttpGet httpGet;
         HttpResponse httpResponse;
 

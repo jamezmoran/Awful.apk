@@ -118,14 +118,14 @@ $(document).ready(function() {
 
 
 $(window).load(function() {
-	//listener.debugMessage('load');
-	//window.stop();
+	// listener.debugMessage('load');
+	// window.stop();
 });
 
 
 
 $(window).ready(function() {
-	//listener.debugMessage('ready');
+	// listener.debugMessage('ready');
     window.setTimeout("scrollPost()", 1000);
     $('.quote_link').each(function(){
 		var id = this.hash.replace(/#post/,'#').concat(':visible');
@@ -147,7 +147,7 @@ function registerPreBlocks(){
 }
 
 function scrollPost() {
-	//listener.debugMessage('scrollPost');
+	// listener.debugMessage('scrollPost');
 	if(prefs.scrollPosition > 0){
 		$(window).scrollTop(prefs.scrollPosition);
 	}else{
@@ -164,7 +164,7 @@ function scrollPost() {
 }
 
 function scrollLastRead(){
-	//listener.debugMessage('scrollLastRead');
+	// listener.debugMessage('scrollLastRead');
 	try{
         $(window).scrollTop($('.unread:visible').first().offset().top);
     }catch(error){
@@ -172,8 +172,9 @@ function scrollLastRead(){
 }
 
 function showInlineImage(url){
-	//listener.debugMessage('showInlineImage');
-	//If it's not a GIF, or if it is a GIF and the user has not disabled GIF animation, then load the image, else switch from gif.png to .gif
+	// listener.debugMessage('showInlineImage');
+	// If it's not a GIF, or if it is a GIF and the user has not disabled GIF
+	// animation, then load the image, else switch from gif.png to .gif
 	if(url.indexOf(".gif") == -1 || (url.indexOf(".gif") != -1 && !prefs.disableGifs)){
 	$('a[href="'+url+'"]').append(function(){
 		if($(this).children('img[src="'+url+'"]').length < 1){
@@ -188,7 +189,7 @@ function showInlineImage(url){
 }
 
 function gifHide() {
-	//listener.debugMessage('gifHide');
+	// listener.debugMessage('gifHide');
 	var minBound = $(window).scrollTop()-($(window).height()/2);
 	var maxBound = $(window).scrollTop()+$(window).height()*1.5;
 	$(".gif").each(function (){
@@ -234,3 +235,9 @@ function refreshHidden(){
 	}
 }
 
+function replaceImage(url, data){
+	Console.Log(url);
+	$("img[src='"+url+"']").each(function(){
+		$(this).src("data:image/gif;base64,"+data);
+	});
+}

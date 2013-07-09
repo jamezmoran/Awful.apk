@@ -43,6 +43,8 @@ import com.actionbarsherlock.view.ActionMode;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.android.volley.Request;
+import com.android.volley.Response.ErrorListener;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.androidquery.AQuery;
 import com.ferg.awfulapp.constants.Constants;
@@ -356,5 +358,15 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
             return getAwfulApplication().getImageLoader();
         }
         return null;
+    }
+    
+    public ErrorListener getErrorListener(){
+    	return new ErrorListener() {
+
+			@Override
+			public void onErrorResponse(VolleyError error) {
+				error.printStackTrace();
+			}
+		};
     }
 }
