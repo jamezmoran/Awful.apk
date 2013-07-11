@@ -47,6 +47,7 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.text.format.DateFormat;
 import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -189,11 +190,12 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 
 					@Override
 					public void onResponse(Bitmap response) {
-						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-						response.compress(Bitmap.CompressFormat.PNG, 0, byteArrayOutputStream);
-						byte[] buffer = byteArrayOutputStream.toByteArray();
-						String base64 = Base64.encodeToString(buffer, 0, buffer.length, Base64.DEFAULT);
-						insertBase64(url, base64);
+						
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						Base64OutputStream b64os = new Base64OutputStream(baos, Base64.DEFAULT);
+						if(response.compress(Bitmap.CompressFormat.PNG, 0, b64os)){
+							insertBase64(url, baos.toString());
+						}
 					}
             		
 				};

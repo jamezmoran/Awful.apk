@@ -2,13 +2,11 @@ var prefs = JSON.parse(preferences);
 
 function toggleinfo(info){
 	if($(info).children('.postinfo-regdate').hasClass('extended')){
-		$(info).children('.avatar-cell').removeClass('extended');
-		$(info).children('.avatar-cell').children('.avatar').removeClass('extended');
+		$(info).children('.avatar').removeClass('extended');
 		$(info).children('.postinfo-regdate').removeClass('extended');
 		$(info).children('.postinfo-title').removeClass('extended');
 	}else{
-		$(info).children('.avatar-cell').addClass('extended');
-		$(info).children('.avatar-cell').children('.avatar').addClass('extended');
+		$(info).children('.avatar').addClass('extended');
 		$(info).children('.postinfo-regdate').addClass('extended');
 		$(info).children('.postinfo-title').addClass('extended');
 	}
@@ -236,8 +234,8 @@ function refreshHidden(){
 }
 
 function replaceImage(url){
-	console.log("replaceImage: "+url);
+	data = "data:image/png;base64,"+listener.getBase64Image(url);
 	$("img[src='"+url+"']").each(function(){
-		$(this).attr("src","data:image/png;base64,"+listener.getBase64Image(url));
+		$(this).attr("src", data);
 	});
 }
