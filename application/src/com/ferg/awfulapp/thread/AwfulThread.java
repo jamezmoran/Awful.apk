@@ -41,6 +41,7 @@ import java.util.regex.Pattern;
 
 import com.android.volley.toolbox.NetworkImageView;
 import com.ferg.awfulapp.AwfulFragment;
+
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -105,12 +106,15 @@ public class AwfulThread extends AwfulPagedItem  {
     public static final String HAS_VIEWED_THREAD = "has_viewed_thread";
     public static final String ARCHIVED = "archived";
 	public static final String RATING = "rating";
+	public static final String HAS_POLL = "has_poll";
+	public static final String HAS_VOTED_POLL = "has_voted_poll";
 
     public static final String TAG_URL 		="tag_url";
     public static final String TAG_CACHEFILE 	="tag_cachefile";
 	
 	private static final Pattern forumId_regex = Pattern.compile("forumid=(\\d+)");
 	private static final Pattern urlId_regex = Pattern.compile("([^#]+)#(\\d+)$");
+
 
 	
     public static Document getForumThreads(int aForumId, int aPage, Messenger statusCallback) throws Exception {

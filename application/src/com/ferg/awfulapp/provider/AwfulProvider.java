@@ -66,6 +66,7 @@ public class AwfulProvider extends ContentProvider {
     public static final String TABLE_EMOTES    = "emotes";
     public static final String TABLE_PM    = "private_messages";
     public static final String TABLE_DRAFTS    = "draft_messages";
+    public static final String TABLE_POLLS    = "polls";
     
     public static final String UPDATED_TIMESTAMP    = "timestamp_row_update";
 
@@ -83,6 +84,8 @@ public class AwfulProvider extends ContentProvider {
     private static final int DRAFT_ID = 11;
     private static final int EMOTE    = 12;
     private static final int EMOTE_ID = 13;
+    private static final int POLL_OPTION    = 14;
+    private static final int POLL_OPTION_ID = 15;
 
     private static final UriMatcher sUriMatcher;
 	private static HashMap<String, String> sForumProjectionMap;
@@ -93,6 +96,7 @@ public class AwfulProvider extends ContentProvider {
 	private static HashMap<String, String> sDraftProjectionMap;
 	private static HashMap<String, String> sPMReplyProjectionMap;
 	private static HashMap<String, String> sEmoteProjectionMap;
+	private static HashMap<String, String> sPollProjectionMap;
 	
 	public static final String[] ThreadProjection = new String[]{
 		AwfulThread.ID,
@@ -116,6 +120,8 @@ public class AwfulProvider extends ContentProvider {
 		AwfulThread.HAS_VIEWED_THREAD,
         AwfulThread.ARCHIVED,
         AwfulThread.RATING,
+        AwfulThread.HAS_POLL,
+        AwfulThread.HAS_VOTED_POLL,
 		UPDATED_TIMESTAMP };
 
 	public static final String[] ForumProjection = new String[]{
@@ -201,6 +207,13 @@ public class AwfulProvider extends ContentProvider {
 		UPDATED_TIMESTAMP
 	};
 	
+	public static final String[] PollProjection = new String[]{
+		AwfulPost.ID,
+		AwfulPost.THREAD_ID,
+		AwfulPost.PERCENTAGE,
+		AwfulPost.COUNT
+	};
+	
     private static class DatabaseHelper extends SQLiteOpenHelper {
         DatabaseHelper(Context aContext) {
             super(aContext, DATABASE_NAME, null, DATABASE_VERSION);
@@ -215,6 +228,7 @@ public class AwfulProvider extends ContentProvider {
         	createEmoteTable(aDb);
         	createPMTable(aDb);
         	createDraftTable(aDb);
+        	createPollTable(aDb);
         }
         	
         	
@@ -250,6 +264,8 @@ public class AwfulProvider extends ContentProvider {
                 AwfulThread.HAS_VIEWED_THREAD + " INTEGER, " +
                 AwfulThread.ARCHIVED + " INTEGER, " +
                 AwfulThread.RATING + " INTEGER, " +
+                AwfulThread.HAS_POLL + " INTEGER, " +
+                AwfulThread.HAS_VOTED_POLL + " INTEGER, " +
             	UPDATED_TIMESTAMP   + " DATETIME);");
     	}
         public void createUCPTable(SQLiteDatabase aDb) {
@@ -320,19 +336,27 @@ public class AwfulProvider extends ContentProvider {
             
 
         }
-        
+        public void createPollTable(SQLiteDatabase aDb) {
+            
+            aDb.execSQL("CREATE TABLE " + TABLE_POLLS + " ("    +
+            	AwfulPost.ID      	 + " INTEGER UNIQUE,"  + 
+        		AwfulPost.THREAD_ID      + " VARCHAR,"   + 
+        		AwfulPost.COUNT   		+ " INTEGER,"         + 
+        		AwfulPost.PERCENTAGE   	 + " REAL,"     + 
+            	UPDATED_TIMESTAMP   + " DATETIME);");
+    	}
         
         @Override
         public void onUpgrade(SQLiteDatabase aDb, int aOldVersion, int aNewVersion) {
         	switch(aOldVersion){//this switch intentionally falls through!
         	case 16:
-                aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_POSTS);
+                dropTable(aDb, TABLE_POSTS);
             	createPostTable(aDb);
         	case 17:
-                aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_FORUM);
+                dropTable(aDb, TABLE_FORUM);
             	createForumTable(aDb);
         	case 18:
-        		aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_EMOTES);
+                dropTable(aDb, TABLE_EMOTES);
         		createEmoteTable(aDb);
         		//fixing my stupid mistake hard-coding the bookmark ID at 2
         		ContentValues forumFix = new ContentValues();
@@ -344,7 +368,7 @@ public class AwfulProvider extends ContentProvider {
         	case 19:
         		//added regdate to post table
         		//post table is just cache, we can just wipe it
-                aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_POSTS);
+                dropTable(aDb, TABLE_POSTS);
                 createPostTable(aDb);
                 
                 //added attachment to draft table
@@ -353,6 +377,7 @@ public class AwfulProvider extends ContentProvider {
         		// Update the threads table
         		aDb.execSQL("ALTER TABLE " + TABLE_THREADS + " ADD COLUMN " + AwfulThread.HAS_VIEWED_THREAD + " INTEGER");
         	case 21:
+        	case 22:
             	wipeRecreateTables(aDb);//clear cache to resolve remaining blank-forum issue.
         	case 23:
         		//added bookmark setting to draft table
@@ -360,8 +385,12 @@ public class AwfulProvider extends ContentProvider {
         	case 24:
         		aDb.execSQL("ALTER TABLE "+TABLE_THREADS+" ADD COLUMN "+AwfulThread.RATING + " INTEGER");
         	case 25:
-                aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_THREADS);
-                createThreadTable(aDb);        		
+        		dropTable(aDb, TABLE_THREADS);
+                createThreadTable(aDb);
+        	case 26:
+        		createPollTable(aDb);
+        		dropTable(aDb, TABLE_THREADS);
+                createThreadTable(aDb);
         		break;//make sure to keep this break statement on the last case of this switch
     		default:
             	wipeRecreateTables(aDb);
@@ -372,6 +401,10 @@ public class AwfulProvider extends ContentProvider {
 		public void onDowngrade(SQLiteDatabase aDb, int oldVersion,	int newVersion) {
         	wipeRecreateTables(aDb);
 		}
+        
+        public void dropTable(SQLiteDatabase aDb, String table){
+        	aDb.execSQL("DROP TABLE IF EXISTS " + table);
+        }
 
 		private void dropAllTables(SQLiteDatabase aDb){
             aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_FORUM);
@@ -381,6 +414,7 @@ public class AwfulProvider extends ContentProvider {
             aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_UCP_THREADS);
             aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_PM);
             aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_DRAFTS);
+            aDb.execSQL("DROP TABLE IF EXISTS " + TABLE_POLLS);
         }
 		
 		public void wipeRecreateTables(SQLiteDatabase aDb){
@@ -433,6 +467,9 @@ public class AwfulProvider extends ContentProvider {
 				break;
 			case EMOTE:
 				table = TABLE_EMOTES;
+				break;
+			case POLL_OPTION:
+				table = TABLE_POLLS;
 				break;
             default:
                 break;
@@ -543,6 +580,10 @@ public class AwfulProvider extends ContentProvider {
                 id_row = AwfulEmote.ID;
                 unique_match = AwfulEmote.TEXT;
 				break;
+			case POLL_OPTION:
+				table = TABLE_POLLS;
+                id_row = AwfulPost.ID;
+				break;
         }
 
 		db.beginTransaction();
@@ -605,6 +646,9 @@ public class AwfulProvider extends ContentProvider {
 				break;
 			case EMOTE:
 				table = TABLE_EMOTES;
+				break;
+			case POLL_OPTION:
+				table = TABLE_POLLS;
 				break;
         }
 
@@ -679,6 +723,13 @@ public class AwfulProvider extends ContentProvider {
 			case EMOTE:
 				builder.setTables(TABLE_EMOTES);
 				builder.setProjectionMap(sEmoteProjectionMap);
+				break;
+			case POLL_OPTION_ID:
+                aSelectionArgs = insertSelectionArg(aSelectionArgs, aUri.getLastPathSegment());        
+                builder.appendWhere(AwfulPost.ID + "=?");
+			case POLL_OPTION:
+				builder.setTables(TABLE_POLLS);
+				builder.setProjectionMap(sPollProjectionMap);
 				break;
         }
 
@@ -796,6 +847,8 @@ public class AwfulProvider extends ContentProvider {
 		sThreadProjectionMap.put(AwfulThread.HAS_VIEWED_THREAD, AwfulThread.HAS_VIEWED_THREAD);
         sThreadProjectionMap.put(AwfulThread.ARCHIVED, AwfulThread.ARCHIVED);
         sThreadProjectionMap.put(AwfulThread.RATING, AwfulThread.RATING);
+        sThreadProjectionMap.put(AwfulThread.HAS_POLL , AwfulThread.HAS_POLL);
+        sThreadProjectionMap.put(AwfulThread.HAS_VOTED_POLL, AwfulThread.HAS_VOTED_POLL);
 		sThreadProjectionMap.put(AwfulThread.TAG_URL, TABLE_THREADS+"."+AwfulThread.TAG_URL+" AS "+AwfulThread.TAG_URL);
 		sThreadProjectionMap.put(AwfulThread.TAG_CACHEFILE, TABLE_THREADS+"."+AwfulThread.TAG_CACHEFILE+" AS "+AwfulThread.TAG_CACHEFILE);
 		sThreadProjectionMap.put(AwfulThread.FORUM_TITLE, TABLE_FORUM+"."+AwfulForum.TITLE+" AS "+AwfulThread.FORUM_TITLE);
@@ -824,6 +877,8 @@ public class AwfulProvider extends ContentProvider {
 		sUCPThreadProjectionMap.put(AwfulThread.HAS_VIEWED_THREAD, AwfulThread.HAS_VIEWED_THREAD);
         sUCPThreadProjectionMap.put(AwfulThread.ARCHIVED, AwfulThread.ARCHIVED);
         sUCPThreadProjectionMap.put(AwfulThread.RATING, AwfulThread.RATING);
+        sUCPThreadProjectionMap.put(AwfulThread.HAS_POLL , AwfulThread.HAS_POLL);
+        sUCPThreadProjectionMap.put(AwfulThread.HAS_VOTED_POLL, AwfulThread.HAS_VOTED_POLL);
 		sUCPThreadProjectionMap.put(AwfulThread.FORUM_TITLE, "null");
 		sUCPThreadProjectionMap.put(AwfulMessage.TYPE, TABLE_DRAFTS+"."+AwfulMessage.TYPE+" AS "+AwfulMessage.TYPE);
 		sUCPThreadProjectionMap.put(UPDATED_TIMESTAMP, TABLE_UCP_THREADS+"."+UPDATED_TIMESTAMP+" AS "+UPDATED_TIMESTAMP);
@@ -865,5 +920,11 @@ public class AwfulProvider extends ContentProvider {
 		sEmoteProjectionMap.put(AwfulEmote.URL, AwfulEmote.URL);
 		sEmoteProjectionMap.put(AwfulEmote.INDEX, AwfulEmote.INDEX);
 		sEmoteProjectionMap.put(UPDATED_TIMESTAMP, UPDATED_TIMESTAMP);
+		
+		sPollProjectionMap.put(AwfulPost.ID, AwfulPost.ID);
+		sPollProjectionMap.put(AwfulPost.THREAD_ID, AwfulPost.THREAD_ID);
+		sPollProjectionMap.put(AwfulPost.COUNT, AwfulPost.COUNT);
+		sPollProjectionMap.put(AwfulPost.PERCENTAGE, AwfulPost.PERCENTAGE);
+		sPollProjectionMap.put(UPDATED_TIMESTAMP, UPDATED_TIMESTAMP);
     }
 }

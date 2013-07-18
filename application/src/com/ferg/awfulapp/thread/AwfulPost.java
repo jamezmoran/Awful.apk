@@ -94,6 +94,8 @@ public class AwfulPost {
 	public static final String AVATAR_TEXT 			 = "avatar_text";
     public static final String CONTENT               = "content";
     public static final String EDITED                = "edited";
+	public static final String COUNT				 = "count";
+	public static final String PERCENTAGE			 = "percentage";
 
 	public static final String FORM_KEY = "form_key";
 	public static final String FORM_COOKIE = "form_cookie";
@@ -101,6 +103,8 @@ public class AwfulPost {
 	/** For comparing against replies to see if the user actually typed anything. **/
 	public static final String REPLY_ORIGINAL_CONTENT = "original_reply";
 	public static final String EDIT_POST_ID = "edit_id";
+
+
 
 
 
