@@ -372,18 +372,22 @@ public class AwfulProvider extends ContentProvider {
                 createPostTable(aDb);
                 
                 //added attachment to draft table
-                aDb.execSQL("ALTER TABLE "+TABLE_DRAFTS+" ADD COLUMN "+AwfulMessage.REPLY_ATTACHMENT + " VARCHAR");
+        		dropTable(aDb, TABLE_THREADS);
+                createThreadTable(aDb);
         	case 20:
         		// Update the threads table
-        		aDb.execSQL("ALTER TABLE " + TABLE_THREADS + " ADD COLUMN " + AwfulThread.HAS_VIEWED_THREAD + " INTEGER");
+        		dropTable(aDb, TABLE_THREADS);
+                createThreadTable(aDb);
         	case 21:
         	case 22:
             	wipeRecreateTables(aDb);//clear cache to resolve remaining blank-forum issue.
         	case 23:
         		//added bookmark setting to draft table
-                aDb.execSQL("ALTER TABLE "+TABLE_DRAFTS+" ADD COLUMN "+AwfulPost.FORM_BOOKMARK + " VARCHAR");
+        		dropTable(aDb, TABLE_DRAFTS);
+                createDraftTable(aDb);;
         	case 24:
-        		aDb.execSQL("ALTER TABLE "+TABLE_THREADS+" ADD COLUMN "+AwfulThread.RATING + " INTEGER");
+        		dropTable(aDb, TABLE_THREADS);
+                createThreadTable(aDb);
         	case 25:
         		dropTable(aDb, TABLE_THREADS);
                 createThreadTable(aDb);
