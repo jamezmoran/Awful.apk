@@ -352,6 +352,23 @@ public class AwfulThread extends AwfulPagedItem  {
     	}
     	thread.put(FORUM_ID, forumId);
     	int lastPage = AwfulPagedItem.parseLastPage(response);
+    	
+    	Elements polls = response.getElementsByClass("standard");
+    	
+    	if(polls.size()>0){
+    		Element poll = polls.first();
+    		if(poll.getElementsByTag("th").first().text().contains("You have already voted on this poll.")){
+    			
+        		thread.put(HAS_VOTED_POLL, 1);
+    		}else{
+    			
+        		thread.put(HAS_VOTED_POLL, 0);
+    		}
+    		thread.put(HAS_POLL, 1);
+    	}else{
+    		thread.put(HAS_POLL, 0);
+    		thread.put(HAS_VOTED_POLL, 0);
+    	}
 
         //notify user we have began processing thread info
         statusUpdates.send(Message.obtain(null, AwfulSyncService.MSG_PROGRESS_PERCENT, aThreadId, 55));
