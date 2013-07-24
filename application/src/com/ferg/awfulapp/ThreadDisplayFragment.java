@@ -27,8 +27,10 @@
 
 package com.ferg.awfulapp;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -60,6 +62,8 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -70,6 +74,8 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.text.format.DateFormat;
+import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -79,6 +85,7 @@ import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.PluginState;
 import android.webkit.WebSettings.RenderPriority;
@@ -92,7 +99,9 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.widget.ShareActionProvider;
+import com.android.volley.Response.Listener;
 import com.android.volley.toolbox.ImageLoader.ImageListener;
+import com.android.volley.toolbox.ImageRequest;
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.network.NetworkUtils;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
@@ -196,11 +205,12 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 
 					@Override
 					public void onResponse(Bitmap response) {
-						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-						response.compress(Bitmap.CompressFormat.PNG, 0, byteArrayOutputStream);
-						byte[] buffer = byteArrayOutputStream.toByteArray();
-						String base64 = Base64.encodeToString(buffer, 0, buffer.length, Base64.DEFAULT);
-						insertBase64(url, base64);
+						
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						Base64OutputStream b64os = new Base64OutputStream(baos, Base64.DEFAULT);
+						if(response.compress(Bitmap.CompressFormat.PNG, 0, b64os)){
+							insertBase64(url, baos.toString());
+						}
 					}
             		
 				};

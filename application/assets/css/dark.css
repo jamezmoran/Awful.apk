@@ -11,42 +11,25 @@ background-color:#0d0d0d;
 font-family:Roboto, userselected, Verdana, Arial, sans-serif;
 }
 
-div.avatar {
-background-size:contain;
-background-repeat:no-repeat;
-background-position:center;
-vertical-align:bottom-text;
-text-align:right;
+div.avatar img {
+max-width:100%; max-height:100%;
+}
+
+div.avatar{
+display: table-cell;
+text-align: center;
+vertical-align: middle;
 height:50px;
-width:inherit;
-position:relative;
 margin:0;
 padding:0;
-}
-
-div.avatar img {
-position:absolute;
-bottom:0;
-right:0;
-}
-
-div.avatar-cell {
-vertical-align:top;
 width:50px;
 float:left;
 margin-right:10px;
 }
 
-div.avatar-cell.extended {
-width:100px;
-}
-
 div.avatar.extended {
+width:100px;
 height:100px;
-}
-
-div.avatarCorner {
-width:20px;
 }
 
 div.post {
@@ -58,12 +41,12 @@ margin:10px 5px;
 padding:15px;
 }
 
-div.post.op {
-background-color:#4A4D00;
-}
-
 div.post.read {
 background-color:#141E33;
+}
+
+div.post.op {
+background-color:#4A4D00;
 }
 
 div.post.self {
