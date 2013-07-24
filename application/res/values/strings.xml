@@ -86,7 +86,7 @@ JingleBells\n
 \n
 Libraries:\n
 ActionBarSherlock\n
-Pull To Refresh for Android\n
+ActionBar Pull To Refresh\n
 ACRA / Bugsense\n
 Apache Commons-Lang3\n
 Apache HttpClient/HttpCore/HttpMime\n
@@ -211,7 +211,6 @@ AQuery</string>
 	<string name="file_too_big">%s exceeds the allowed 1 MB attachment size and has not been attached.</string>
 	<string name="file_unreadable">File %s could not be accessed</string>
 	<string name="file_removed">Attachment removed</string>
-	<string name="refreshFrog">Pull-Frog-to-Refresh</string>
 	<string name="lock_scrolling">Lock Scrolling</string>
 	<string name="lock_scrolling_summary">Locks Horizontal Scrolling to Navigate</string>
 	<string name="disable_timgs">Disable timgs</string>
@@ -238,5 +237,7 @@ AQuery</string>
     <string name="keep_screen_on">Toggle Keep Screen On</string>
     <string name="ignore_title">Ignore User</string>
     <string name="ignore_message">Warning: Ignoring a user can currently not be undone within Awful</string>
+    <string name="export_settings">Export settings</string>
+    <string name="import_settings">Import settings</string>
 
 </resources>

@@ -27,6 +27,7 @@
 
 package com.ferg.awfulapp;
 
+import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshAttacher;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
@@ -62,6 +63,7 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
 	protected AQuery aq;
 	protected int currentProgress = 100;
 	private AwfulProgressBar mProgressBar;
+	protected PullToRefreshAttacher mP2RAttacher;
 	
 
     protected Handler mHandler = new Handler() {
@@ -76,10 +78,14 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
                     loadingFailed(aMsg);
 	        		aa.reauthenticate();
 	        	}else if(aMsg.what == AwfulSyncService.MSG_PROGRESS_PERCENT){
+	        		mP2RAttacher.setRefreshComplete();
 	        		loadingUpdate(aMsg);
 	        	}else{
 		            switch (aMsg.arg1) {
 		                case AwfulSyncService.Status.WORKING:
+		                	if(mP2RAttacher != null){
+		                		mP2RAttacher.setRefreshComplete();
+		                	}
 		                    loadingStarted(aMsg);
 		                    break;
 		                case AwfulSyncService.Status.OKAY:
@@ -102,7 +108,7 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
     	if(!(aActivity instanceof AwfulActivity)){
     		Log.e("AwfulFragment","PARENT ACTIVITY NOT EXTENDING AwfulActivity!");
     	}
-        mPrefs = new AwfulPreferences(getAwfulActivity(), this);
+        mPrefs = AwfulPreferences.getInstance(getAwfulActivity(), this);
     }
     
     protected View inflateView(int resId, ViewGroup container, LayoutInflater inflater){
@@ -153,7 +159,6 @@ public abstract class AwfulFragment extends SherlockFragment implements AwfulUpd
     public void onDestroy() {
     	super.onDestroy(); if(DEBUG) Log.e(TAG, "onDestroy");
         mPrefs.unregisterCallback(this);
-        mPrefs.unRegisterListener();
     }
 
     @Override

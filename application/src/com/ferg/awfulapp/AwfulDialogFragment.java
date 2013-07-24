@@ -94,7 +94,7 @@ public abstract class AwfulDialogFragment extends SherlockDialogFragment impleme
     	if(!(aActivity instanceof AwfulActivity)){
     		Log.e("AwfulFragment","PARENT ACTIVITY NOT EXTENDING AwfulActivity!");
     	}
-        mPrefs = new AwfulPreferences(getAwfulActivity(), this);
+        mPrefs = AwfulPreferences.getInstance(getAwfulActivity(), this);
     }
     
     protected View inflateView(int resId, ViewGroup container, LayoutInflater inflater){
@@ -120,7 +120,6 @@ public abstract class AwfulDialogFragment extends SherlockDialogFragment impleme
     public void onDestroy() {
     	super.onDestroy();
         mPrefs.unregisterCallback(this);
-        mPrefs.unRegisterListener();
     }
     
     protected void displayForumIndex(){

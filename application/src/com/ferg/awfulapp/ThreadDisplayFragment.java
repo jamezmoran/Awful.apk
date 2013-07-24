@@ -27,48 +27,72 @@
 
 package com.ferg.awfulapp;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TimeZone;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshAttacher;
+import uk.co.senab.actionbarpulltorefresh.library.viewdelegates.WebViewDelegate;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
-import android.app.DownloadManager.Query;
 import android.app.DownloadManager.Request;
-import android.content.*;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.net.Uri;
-import android.os.*;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.text.format.DateFormat;
-import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.webkit.*;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebSettings.PluginState;
 import android.webkit.WebSettings.RenderPriority;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.widget.ShareActionProvider;
-import com.android.volley.VolleyError;
-import com.android.volley.Response.Listener;
-import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.ImageLoader.ImageListener;
-import com.android.volley.toolbox.ImageRequest;
-import com.android.volley.toolbox.ImageLoader.ImageContainer;
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.network.NetworkUtils;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
@@ -76,29 +100,13 @@ import com.ferg.awfulapp.preferences.ColorPickerPreference;
 import com.ferg.awfulapp.provider.AwfulProvider;
 import com.ferg.awfulapp.provider.ColorProvider;
 import com.ferg.awfulapp.service.AwfulSyncService;
-import com.ferg.awfulapp.thread.*;
+import com.ferg.awfulapp.thread.AwfulMessage;
+import com.ferg.awfulapp.thread.AwfulPagedItem;
+import com.ferg.awfulapp.thread.AwfulPost;
+import com.ferg.awfulapp.thread.AwfulThread;
+import com.ferg.awfulapp.thread.AwfulURL;
 import com.ferg.awfulapp.thread.AwfulURL.TYPE;
-import com.ferg.awfulapp.util.AwfulGifStripper;
 import com.ferg.awfulapp.widget.NumberPicker;
-import com.handmark.pulltorefresh.library.ILoadingLayout;
-import com.handmark.pulltorefresh.library.PullToRefreshBase;
-import com.handmark.pulltorefresh.library.PullToRefreshWebView;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.text.Normalizer.Form;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 /**
  * Uses intent extras:
@@ -108,7 +116,7 @@ import java.util.*;
  *
  *  Can also handle an HTTP intent that refers to an SA showthread.php? url.
  */
-public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateCallback, PullToRefreshBase.OnRefreshListener2 {
+public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateCallback, PullToRefreshAttacher.OnRefreshListener {
     private static final boolean OUTPUT_HTML = false;
 
     private PostLoaderManager mPostLoaderCallback;
@@ -126,7 +134,6 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 	private TextView mProbationMessage;
 	private ImageButton mProbationButton;
 
-    private PullToRefreshWebView mThreadWindow;
     private WebView mThreadView;
     private ViewGroup mThreadParent;
 
@@ -252,6 +259,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     public void onAttach(Activity aActivity) {
         super.onAttach(aActivity); Log.e(TAG, "onAttach");
         parent = (ForumsIndexActivity) aActivity;
+    	mP2RAttacher = this.getAwfulActivity().getPullToRefreshAttacher();
     }
 
     @Override
@@ -305,12 +313,12 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 		mNextPage = (ImageButton) aq.find(R.id.next_page).clicked(onButtonClick).getView();
 		mPrevPage = (ImageButton) aq.find(R.id.prev_page).clicked(onButtonClick).getView();
         mRefreshBar  = (ImageButton) aq.find(R.id.refresh).clicked(onButtonClick).getView();
-		mThreadWindow = (PullToRefreshWebView) result.findViewById(R.id.thread);
-        mThreadView = mThreadWindow.getRefreshableView();
-        mThreadView.setKeepScreenOn(keepScreenOn);
-        mThreadWindow.setOnRefreshListener(this);
-		mThreadWindow.setBackgroundColor(ColorProvider.getBackgroundColor(mPrefs));
-        mThreadWindow.setMode(PullToRefreshBase.Mode.PULL_FROM_END);
+		mThreadView = (WebView) result.findViewById(R.id.thread);
+        if(mP2RAttacher != null){
+            mP2RAttacher.addRefreshableView(mThreadView,new WebViewDelegate(), this);
+            mP2RAttacher.setPullFromBottom(true);
+        	mP2RAttacher.setEnabled(true);
+        }
         mThreadParent = (ViewGroup) result.findViewById(R.id.thread_window);
         initThreadViewProperties();
 		mProbationBar = (View) result.findViewById(R.id.probationbar);
@@ -341,7 +349,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 		mThreadView.getSettings().setJavaScriptEnabled(true);
 		mThreadView.getSettings().setRenderPriority(RenderPriority.LOW);
         mThreadView.getSettings().setDefaultZoom(WebSettings.ZoomDensity.MEDIUM);
-        if(mPrefs.inlineYoutube && Constants.isFroyo()){//YOUTUBE SUPPORT BLOWS
+        if(mPrefs.inlineYoutube){//YOUTUBE SUPPORT BLOWS
         	mThreadView.getSettings().setPluginState(PluginState.ON_DEMAND);
         }
 
@@ -410,24 +418,26 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 			mNextPage.setImageResource(R.drawable.ic_menu_arrowright);
 		}
 
-        if(mThreadWindow != null){
+        if(mThreadView != null){
+        	if(mP2RAttacher == null){
+        		mP2RAttacher = this.getAwfulActivity().getPullToRefreshAttacher();
+        	}
             if(mPrefs.disablePullNext){
-                mThreadWindow.setMode(PullToRefreshBase.Mode.DISABLED);
+                mP2RAttacher.setEnabled(false);
             }else{
-                mThreadWindow.setMode(PullToRefreshBase.Mode.PULL_FROM_END);
-                ILoadingLayout footer = mThreadWindow.getLoadingLayoutProxy(false, true);
-                if(getPage() < mLastPage){
-                    footer.setPullLabel("Pull for Next Page...");
-                    footer.setReleaseLabel("Release for Next Page...");
-                    footer.setLoadingDrawable(getResources().getDrawable(R.drawable.grey_inline_arrowup));
-                }else{
-                    footer.setPullLabel("Pull to refresh...");
-                    footer.setReleaseLabel("Release to refresh...");
-                    footer.setLoadingDrawable(getResources().getDrawable(R.drawable.grey_inline_load));
-                }
+                mP2RAttacher.setEnabled(true);
+//                if(getPage() < mLastPage){
+//                    footer.setPullLabel("Pull for Next Page...");
+//                    footer.setReleaseLabel("Release for Next Page...");
+//                    footer.setLoadingDrawable(getResources().getDrawable(R.drawable.grey_inline_arrowup));
+//                }else{
+//                    footer.setPullLabel("Pull to refresh...");
+//                    footer.setReleaseLabel("Release to refresh...");
+//                    footer.setLoadingDrawable(getResources().getDrawable(R.drawable.grey_inline_load));
+//                }
             }
-            //mThreadWindow.setHeaderBackgroundColor(mPrefs.postBackgroundColor2);
-            mThreadWindow.setTextColor(ColorProvider.getTextColor(mPrefs), ColorProvider.getAltTextColor(mPrefs));
+//            mThreadWindow.setHeaderBackgroundColor(mPrefs.postBackgroundColor2);
+//            mThreadWindow.setTextColor(ColorProvider.getTextColor(mPrefs), ColorProvider.getAltTextColor(mPrefs));
         }
 	}
 	
@@ -472,7 +482,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     
     public void resumeWebView(){
     	if(getActivity() != null){
-	        if (mThreadWindow == null || mThreadView == null) {
+	        if (mThreadView == null) {
 	            //recreateWebview();
 	        }else{
 	            mThreadView.onResume();
@@ -487,6 +497,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
         if(mThreadView != null){
         	mThreadView.setKeepScreenOn(keepScreenOn);
         }
+        mP2RAttacher.setPullFromBottom(true);
 	}
 	
 	
@@ -508,6 +519,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
         if(mThreadView != null){
         	mThreadView.setKeepScreenOn(false);
         }
+        mP2RAttacher.setPullFromBottom(false);
 	}
 	
     @Override
@@ -990,8 +1002,8 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     @Override
     public void loadingFailed(Message aMsg) {
     	super.loadingFailed(aMsg);
-        if(mThreadWindow != null){
-            mThreadWindow.onRefreshComplete();
+        if(mThreadView != null){
+//        	mThreadView.onRefreshComplete();
         }
         refreshInfo();
 		if(aMsg.obj == null && getActivity() != null){
@@ -1000,11 +1012,9 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     	switch (aMsg.what) {
 	        case AwfulSyncService.MSG_SYNC_THREAD:
 	        	refreshPosts();
-	            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO){
-	    			mNextPage.setColorFilter(0);
-	    			mPrevPage.setColorFilter(0);
-	    			mRefreshBar.setColorFilter(0);
-	            }
+	    		mNextPage.setColorFilter(0);
+	    		mPrevPage.setColorFilter(0);
+	    		mRefreshBar.setColorFilter(0);
 	            break;
 	        case AwfulSyncService.MSG_SET_BOOKMARK:
 	        	refreshInfo();
@@ -1023,26 +1033,24 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     @Override
     public void loadingStarted(Message aMsg) {
     	super.loadingStarted(aMsg);
-        if(mThreadWindow != null){
-            mThreadWindow.onRefreshComplete();
+        if(mThreadView != null){
+//            mThreadWindow.onRefreshComplete();
         }
     	switch(aMsg.what){
 		case AwfulSyncService.MSG_SYNC_THREAD:
-	    	if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO){
-	    		if(getPage() == getLastPage()){
-	    			mNextPage.setColorFilter(buttonSelectedColor);
-	    			mPrevPage.setColorFilter(0);
-	    			mRefreshBar.setColorFilter(0);
-	    		}else if(getPage() <= 1){
-	    			mPrevPage.setColorFilter(buttonSelectedColor);
-	    			mNextPage.setColorFilter(0);
-	    			mRefreshBar.setColorFilter(0);
-	    		}else{
-	    			mRefreshBar.setColorFilter(buttonSelectedColor);
-	    			mPrevPage.setColorFilter(0);
-	    			mNextPage.setColorFilter(0);
-	    		}
-	        }
+    		if(getPage() == getLastPage()){
+    			mNextPage.setColorFilter(buttonSelectedColor);
+    			mPrevPage.setColorFilter(0);
+    			mRefreshBar.setColorFilter(0);
+    		}else if(getPage() <= 1){
+    			mPrevPage.setColorFilter(buttonSelectedColor);
+    			mNextPage.setColorFilter(0);
+    			mRefreshBar.setColorFilter(0);
+    		}else{
+    			mRefreshBar.setColorFilter(buttonSelectedColor);
+    			mPrevPage.setColorFilter(0);
+    			mNextPage.setColorFilter(0);
+    		}
 	        break;
         default:
         	Log.e(TAG,"Message not handled: "+aMsg.what);
@@ -1088,11 +1096,9 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
         	if(aMsg.arg2 == getPage()){
 	        	setProgress(50);
 	        	refreshPosts();
-	            if(Constants.isFroyo()){
-	    			mNextPage.setColorFilter(0);
-	    			mPrevPage.setColorFilter(0);
-	    			mRefreshBar.setColorFilter(0);
-	            }
+	    		mNextPage.setColorFilter(0);
+	    		mPrevPage.setColorFilter(0);
+	    		mRefreshBar.setColorFilter(0);
         	}
             break;
         case AwfulSyncService.MSG_SET_BOOKMARK:
@@ -1115,10 +1121,10 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 
         try {
             mThreadView.addJavascriptInterface(clickInterface, "listener");
-            mThreadView.addJavascriptInterface(getSerializedPreferences(new AwfulPreferences(getActivity())), "preferences");
+            mThreadView.addJavascriptInterface(getSerializedPreferences(AwfulPreferences.getInstance(getActivity())), "preferences");
             boolean useTabletLayout = !mPrefs.threadLayout.equalsIgnoreCase("phone") && 
             		(mPrefs.threadLayout.equalsIgnoreCase("tablet") || Constants.isWidescreen(getActivity()));
-            String html = AwfulThread.getHtml(aPosts, new AwfulPreferences(getActivity()), useTabletLayout, getPage(), mLastPage, mParentForumId, threadClosed);
+            String html = AwfulThread.getHtml(aPosts, AwfulPreferences.getInstance(getActivity()), useTabletLayout, getPage(), mLastPage, mParentForumId, threadClosed);
             if(OUTPUT_HTML && Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED)){
             	Toast.makeText(getActivity(), "OUTPUTTING DEBUG HTML", Toast.LENGTH_LONG).show();
             	FileOutputStream out = new FileOutputStream(new File(Environment.getExternalStorageDirectory(), "awful-thread-"+getThreadId()+"-"+getPage()+".html"));
@@ -1159,19 +1165,17 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     }
     private ClickInterface clickInterface = new ClickInterface();
 
-    @Override
-    public void onPullDownToRefresh(PullToRefreshBase refreshView) {
-        refresh();
-    }
 
-    @Override
-    public void onPullUpToRefresh(PullToRefreshBase refreshView) {
+	@Override
+	public void onRefreshStarted(View view) {
         if(getPage() < mLastPage){
             goToPage(getPage()+1);
         }else{
             refresh();
-        }
-    }
+        }		
+	}
+
+  
 
     private class ClickInterface {
         public static final int SEND_PM  = 0;
@@ -1513,7 +1517,6 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 		}
 		if(mThreadView != null){
 			mThreadView.setBackgroundColor(ColorProvider.getBackgroundColor(mPrefs));
-            mThreadWindow.setBackgroundColor(ColorProvider.getBackgroundColor(mPrefs));
             mThreadView.loadUrl("javascript:changeCSS('"+mPrefs.theme+"')");
 		}
 	}
@@ -1801,13 +1804,11 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 			if(mShowSidebarIcon){
 				mToggleSidebar.setVisibility(View.VISIBLE);
 				mToggleSidebar.setImageResource(R.drawable.ic_menu_sidebar);
-	    		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO){
-					if(sidebarVisible){
-						mToggleSidebar.setColorFilter(buttonSelectedColor);
-					}else{
-						mToggleSidebar.setColorFilter(0);
-					}
-	    		}
+				if(sidebarVisible){
+					mToggleSidebar.setColorFilter(buttonSelectedColor);
+				}else{
+					mToggleSidebar.setColorFilter(0);
+				}
 			}else{
 				mToggleSidebar.setVisibility(View.VISIBLE);
 				mToggleSidebar.setImageDrawable(null);
@@ -1874,7 +1875,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
 	        default:
 	            return false;
 	        }
-	    } 
+	} 
 	
     
     private void toggleScreenOn() {
@@ -1882,7 +1883,7 @@ public class ThreadDisplayFragment extends AwfulFragment implements AwfulUpdateC
     	mThreadView.setKeepScreenOn(keepScreenOn);
 		Toast.makeText(getAwfulActivity(), keepScreenOn? "Screen stays on" :"Screen turns itself off", Toast.LENGTH_SHORT).show();
 	}
-    
+ 
     protected void insertBase64(String url, String base64){
     	clickInterface.urlBase64.put(url, base64);
     	mThreadView.loadUrl("javascript:replaceImage('"+url+"');");
