@@ -235,7 +235,8 @@ function refreshHidden(){
 
 function replaceImage(url){
 	data = "data:image/png;base64,"+listener.getBase64Image(url);
+	image = $("<img src='"+data+"' />");
 	$("img[src='"+url+"']").each(function(){
-		$(this).attr("src", data);
+		$(this).replaceWith(image);
 	});
 }
