@@ -30,16 +30,21 @@ package com.ferg.awfulapp.thread;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.MalformedURLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.text.TextUtils;
+
 import com.android.volley.toolbox.NetworkImageView;
 import com.ferg.awfulapp.AwfulFragment;
 
@@ -50,8 +55,13 @@ import org.jsoup.select.Elements;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.res.AssetManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Environment;
@@ -59,6 +69,7 @@ import android.os.Messenger;
 import android.text.TextUtils.TruncateAt;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.androidquery.AQuery;
@@ -106,6 +117,8 @@ public class AwfulThread extends AwfulPagedItem  {
 	
 	private static final Pattern forumId_regex = Pattern.compile("forumid=(\\d+)");
 	private static final Pattern urlId_regex = Pattern.compile("([^#]+)#(\\d+)$");
+	
+	private static List<String> assets = null;
 
 
 	
@@ -515,16 +528,40 @@ public class AwfulThread extends AwfulPagedItem  {
         boolean hasViewedThread = data.getInt(data.getColumnIndex(HAS_VIEWED_THREAD)) == 1;
 		info.setSingleLine(!prefs.wrapThreadTitles);
 
-        NetworkImageView threadTag = (NetworkImageView) current.findViewById(R.id.thread_tag);
+        ImageView threadTag = (ImageView) current.findViewById(R.id.thread_tag);
 		if(!prefs.threadInfo_Tag){
             threadTag.setVisibility(View.GONE);
 		}else{
-			String tagFile = data.getString(data.getColumnIndex(TAG_CACHEFILE));
-			if(TextUtils.isEmpty(tagFile)){
-                threadTag.setVisibility(View.GONE);
-			}else{
-                threadTag.setImageUrl(data.getString(data.getColumnIndex(TAG_URL)), parent.getImageLoader());
+			Uri uri = Uri.parse(data.getString(data.getColumnIndex(TAG_URL)));
+			String tag = uri.getLastPathSegment().substring(0, uri.getLastPathSegment().length()-4);
+			AssetManager am = current.getResources().getAssets();
+			if(assets == null){
+				try {
+					assets = Arrays.asList(am.list("thread-tags-master"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
+			if (!assets.contains(tag+".png")){
+				String tagFile = data.getString(data.getColumnIndex(TAG_CACHEFILE));
+				if(TextUtils.isEmpty(tagFile)){
+	                threadTag.setVisibility(View.GONE);
+				}else{
+					aq.find(R.id.thread_tag).image("http://awfulapp.com/"+tag+".png").visible();
+				}
+			} else {
+				InputStream istr = null;
+				try {
+					istr = am.open("thread-tags-master/"+tag+".png");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				Drawable drawable = new BitmapDrawable(current.getResources(), BitmapFactory.decodeStream(istr));
+
+				threadTag.setImageDrawable(drawable);
+			}
+
+
 		}
 
 		if(!prefs.threadInfo_Author && !prefs.threadInfo_Killed && !prefs.threadInfo_Page){
@@ -605,7 +642,7 @@ public class AwfulThread extends AwfulPagedItem  {
 		if(prefs != null){
 			title.setTextColor(ColorProvider.getTextColor(ForumName));
 			info.setTextColor(ColorProvider.getAltTextColor(ForumName));
-			title.setSingleLine(!prefs.wrapThreadTitles);
+			title.setMaxLines(!prefs.wrapThreadTitles?2:Integer.MAX_VALUE);
 			if(!prefs.wrapThreadTitles){
 				title.setEllipsize(TruncateAt.END);
 			}else{
