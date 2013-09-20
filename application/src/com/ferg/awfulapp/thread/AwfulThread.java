@@ -532,6 +532,7 @@ public class AwfulThread extends AwfulPagedItem  {
 		if(!prefs.threadInfo_Tag){
             threadTag.setVisibility(View.GONE);
 		}else{
+			threadTag.setBackgroundColor(ColorProvider.getTextColor());
 			Uri uri = Uri.parse(data.getString(data.getColumnIndex(TAG_URL)));
 			String tag = uri.getLastPathSegment().substring(0, uri.getLastPathSegment().length()-4);
 			AssetManager am = current.getResources().getAssets();
