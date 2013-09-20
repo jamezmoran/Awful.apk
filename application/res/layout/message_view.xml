@@ -41,9 +41,9 @@
 	                    android:id="@+id/post_date"
 	                    android:layout_width="wrap_content"
 	                    android:layout_height="wrap_content"
-	                    android:layout_marginLeft="4dip"
-	                    android:textColor="#ffffff"
-	                    android:textSize="16dip" />
+                        android:textColor="#ffffff"
+	                    android:textSize="12sp"
+                        />
 	
 	        </LinearLayout>
 	        
@@ -98,6 +98,7 @@
                 android:padding="8dip"
                 android:textColor="@color/default_post_font"
                 android:inputType="text|textAutoCorrect|textCapSentences"
+                android:textCursorDrawable="@null"
                 android:singleLine="true"
                 />
         </LinearLayout>
@@ -121,6 +122,7 @@
                 android:padding="8dip"
                 android:textColor="@color/default_post_font"
                 android:inputType="text|textAutoCorrect|textCapSentences"
+                android:textCursorDrawable="@null"
                 android:singleLine="true"
                 />
         </LinearLayout>
@@ -151,6 +153,7 @@
                 android:minLines="5" 
                 android:paddingLeft="10dip" 
                 android:paddingRight="10dip"
+                android:textCursorDrawable="@null"
                 />
         </LinearLayout>
 	</LinearLayout>

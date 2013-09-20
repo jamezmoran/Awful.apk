@@ -39,7 +39,6 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -53,14 +52,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
 import com.ferg.awfulapp.provider.AwfulProvider;
 import com.ferg.awfulapp.provider.ColorProvider;
 import com.ferg.awfulapp.service.AwfulCursorAdapter;
-import com.ferg.awfulapp.service.AwfulSyncService;
 import com.ferg.awfulapp.thread.AwfulForum;
 import com.ferg.awfulapp.thread.AwfulMessage;
 
@@ -74,6 +71,12 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
 	private AwfulCursorAdapter mCursorAdapter;
     private PMIndexCallback mPMDataCallback = new PMIndexCallback(mHandler);
     
+    private int currentFolder = FOLDER_INBOX;
+
+    public final static int FOLDER_INBOX	= 0;
+    public final static int FOLDER_SENT		= -1;
+    
+    
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -83,7 +86,6 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
     @Override
     public void onAttach(Activity aActivity) {
     	super.onAttach(aActivity);
-    	mP2RAttacher = this.getAwfulActivity().getPullToRefreshAttacher();
     }
     
     @Override
@@ -96,11 +98,6 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
 
         mPMList = (ListView) result.findViewById(R.id.message_listview);
 
-        if(mP2RAttacher != null){
-            mP2RAttacher.addRefreshableView(mPMList,new AbsListViewDelegate(), this);
-            mP2RAttacher.setPullFromBottom(false);
-        	mP2RAttacher.setEnabled(true);
-        }
         return result;
     }
     
@@ -108,7 +105,12 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
     public void onActivityCreated(Bundle aSavedState) {
         super.onActivityCreated(aSavedState);
 
-        setRetainInstance(true);
+        mP2RAttacher = this.getAwfulActivity().getPullToRefreshAttacher();
+        if(mP2RAttacher != null){
+            mP2RAttacher.addRefreshableView(mPMList,new AbsListViewDelegate(), this);
+            mP2RAttacher.setPullFromBottom(false);
+            mP2RAttacher.setEnabled(true);
+        }
 
         mPMList.setCacheColorHint(ColorProvider.getBackgroundColor());
 
@@ -131,11 +133,12 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
 		restartLoader(Constants.PRIVATE_MESSAGE_THREAD, null, mPMDataCallback);
         getActivity().getContentResolver().registerContentObserver(AwfulForum.CONTENT_URI, true, mPMDataCallback);
         syncPMs();
+        setTitle(getTitle());
     }
     
     private void syncPMs() {
     	if(getActivity() != null){
-            queueRequest(new PMListRequest(getActivity()).build(this, new AwfulRequest.AwfulResultCallback<Void>() {
+            queueRequest(new PMListRequest(getActivity(), currentFolder).build(this, new AwfulRequest.AwfulResultCallback<Void>() {
                 @Override
                 public void success(Void result) {
                     restartLoader(Constants.PRIVATE_MESSAGE_THREAD, null, mPMDataCallback);
@@ -189,6 +192,11 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
         case R.id.refresh:
         	syncPMs();
         	break;
+        case R.id.toggle_folder:
+        	currentFolder = (currentFolder==FOLDER_INBOX) ? FOLDER_SENT : FOLDER_INBOX;
+            setTitle(getTitle());
+        	syncPMs();
+        	break;
         case R.id.settings:
         	startActivity(new Intent().setClass(getActivity(), SettingsActivity.class));
         	break;
@@ -232,12 +240,12 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
 
 		public Loader<Cursor> onCreateLoader(int aId, Bundle aArgs) {
 			Log.i(TAG,"Load PM Cursor.");
-            return new CursorLoader(getActivity(), 
-            						AwfulMessage.CONTENT_URI, 
-            						AwfulProvider.PMProjection, 
-            						null, 
-            						null,
-            						AwfulMessage.ID+" DESC");
+			return new CursorLoader(getActivity(), 
+					AwfulMessage.CONTENT_URI, 
+					AwfulProvider.PMProjection, 
+					AwfulMessage.FOLDER+"=?", 
+					AwfulProvider.int2StrArray(currentFolder),
+					AwfulMessage.ID+" DESC");
         }
 
         public void onLoadFinished(Loader<Cursor> aLoader, Cursor aData) {
@@ -266,6 +274,12 @@ public class PrivateMessageListFragment extends AwfulFragment implements PullToR
 
 	@Override
 	public String getTitle() {
+        switch (currentFolder){
+            case FOLDER_INBOX:
+                return "PM - Inbox";
+            case FOLDER_SENT:
+                return "PM - Sent";
+        }
 		return "Private Messages";
 	}
 	

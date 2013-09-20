@@ -123,6 +123,7 @@ AQuery</string>
 	<string name="threadinfo_pages">Number of pages</string>
 	<string name="threadinfo_tag">Show forum &amp; thread tags</string>
 	<string name="threadinfo_tag_summary">Category icons</string>
+	<string name="color_bookmarks">Use \'star\' colors for bookmarks</string>
 	<string-array name="imgur_thumbnails">
 		<item>Don\'t replace pictures</item>
 		<item>Tiny (160px)</item>
@@ -156,6 +157,7 @@ AQuery</string>
 	<string name="goto_firstpage">First page</string>
 	<string name="goto_lastpage">Last page</string>
 	<string name="toggle_bookmark">Toggle bookmark</string>
+	<string name="toggle_bookmark_color">Toggle bookmark color</string>
     <string name="mark_unread">Mark thread unread</string>
     <string name="mark_unread_success">Thread Marked Unread</string>
 	<string name="private_message">Private messages</string>
@@ -165,6 +167,7 @@ AQuery</string>
 	<string name="show_spoilers_summary">Spoilers are displayed as normal text</string>
 	<string name="send_pm">Send PM</string>
 	<string name="new_pm">New private message</string>
+	<string name="toggle_folder">Toggle mail folder</string>
 	<string name="hide_read_images">Hide old images</string>
 	<string name="hide_read_images_summary">Hide images in previously viewed posts</string>
 	<string name="show_smilies">Show emotes</string>
@@ -246,5 +249,6 @@ AQuery</string>
     <string name="message_empty_subtext">type something, fuck</string>
     <string name="vote_succeeded_sub">THANK GOD YOU VOTED!</string>
     <string name="vote_failed_sub">Maybe next time?</string>
+    <string name="not_available_on_your_version">This feature is not available on your version of Android. Sorry.</string>
 
 </resources>

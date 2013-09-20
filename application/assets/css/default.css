@@ -66,6 +66,18 @@ article.read div.postcontent {
 color:#AAAAAA;
 }
 
+article.marked {
+background-color:#FFDFBF;
+}
+
+article.marked section.postcontent .bbc-block {
+border-left:2px solid #CCCBCC !important;
+}
+
+article.marked header {
+border-bottom:2px solid #CCCBCC !important;
+}
+
 article.op {
 background-color:#FEFFD9;
 }
@@ -125,9 +137,20 @@ font-style:italic;
 font-size: 0.7em;
 }
 
-section.postcontent .bbc-spoiler, section.postcontent .bbc-spoiler li, section.postcontent .bbc-spoiler a {
-color: #828282;
+section.postcontent .bbc-spoiler{
 background: #828282;
+}
+
+section.postcontent .bbc-spoiler * {
+visibility: hidden;
+}
+
+section.postcontent .bbc-spoiler.spoiled {
+background: transparent;
+}
+
+section.postcontent .bbc-spoiler.spoiled * {
+visibility: visible;
 }
 
 header {

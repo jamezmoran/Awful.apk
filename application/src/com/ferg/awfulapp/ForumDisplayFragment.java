@@ -36,7 +36,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -47,17 +46,17 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.widget.*;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+
 import com.android.volley.VolleyError;
 import com.ferg.awfulapp.constants.Constants;
 import com.ferg.awfulapp.dialog.LogOutDialog;
 import com.ferg.awfulapp.preferences.AwfulPreferences;
 import com.ferg.awfulapp.provider.AwfulProvider;
 import com.ferg.awfulapp.provider.ColorProvider;
-import com.ferg.awfulapp.service.AwfulSyncService;
 import com.ferg.awfulapp.service.ThreadCursorAdapter;
+import com.ferg.awfulapp.task.BookmarkColorRequest;
 import com.ferg.awfulapp.task.BookmarkRequest;
 import com.ferg.awfulapp.task.MarkUnreadRequest;
-import com.ferg.awfulapp.util.AwfulError;
 import com.ferg.awfulapp.task.AwfulRequest;
 import com.ferg.awfulapp.task.ThreadListRequest;
 import com.ferg.awfulapp.thread.AwfulForum;
@@ -80,7 +79,7 @@ import uk.co.senab.actionbarpulltorefresh.library.viewdelegates.AbsListViewDeleg
  *
  *  Can also handle an HTTP intent that refers to an SA forumdisplay.php? url.
  */
-public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCallback, PullToRefreshAttacher.OnRefreshListener {
+public class ForumDisplayFragment extends AwfulFragment implements PullToRefreshAttacher.OnRefreshListener {
     
     private ListView mListView;
     private ImageButton mRefreshBar;
@@ -101,8 +100,6 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
     private int mParentForumId = 0;
     
     private boolean loadFailed = false;
-    
-    private static final int buttonSelectedColor = 0x8033b5e5;//0xa0ff7f00;//TODO move to theme area once we rewrite themes.
     
     private long lastRefresh = 0;
 
@@ -129,6 +126,11 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 
 
     @Override
+    public void onAttach(Activity aActivity) {
+        super.onAttach(aActivity);
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState); if(DEBUG) Log.e(TAG,"onCreate");
 		setRetainInstance(true);
@@ -138,13 +140,6 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
     public View onCreateView(LayoutInflater aInflater, ViewGroup aContainer, Bundle aSavedState) {
         View result = inflateView(R.layout.forum_display, aContainer, aInflater);
     	mListView = (ListView) result.findViewById(R.id.forum_list);
-        //mListView.setDrawingCacheEnabled(true);
-
-        if(mP2RAttacher != null){
-            mP2RAttacher.addRefreshableView(mListView,new AbsListViewDelegate(), this);
-            mP2RAttacher.setPullFromBottom(false);
-        	mP2RAttacher.setEnabled(true);
-        }
         mPageCountText = (TextView) result.findViewById(R.id.page_count);
 		getAwfulActivity().setPreferredFont(mPageCountText);
 		mNextPage = (ImageButton) result.findViewById(R.id.next_page);
@@ -165,16 +160,19 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 		
         return result;
     }
-	
-	@Override
-	public void onAttach(Activity aActivity) {
-		super.onAttach(aActivity);
-    	mP2RAttacher = this.getAwfulActivity().getPullToRefreshAttacher();
-	}
 
     @Override
     public void onActivityCreated(Bundle aSavedState) {
         super.onActivityCreated(aSavedState);
+
+        mP2RAttacher = this.getAwfulActivity().getPullToRefreshAttacher();
+        if(mP2RAttacher != null){
+            mP2RAttacher.addRefreshableView(mListView,new AbsListViewDelegate(), this);
+            mP2RAttacher.setPullFromBottom(false);
+            mP2RAttacher.setEnabled(true);
+        }else{
+            Log.e("mP2RAttacher", "PTR MISSING");
+        }
 
     	if(aSavedState != null){
         	Log.i(TAG,"Restoring state!");
@@ -335,6 +333,12 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 				ucp.setTitle(R.string.user_cp);
 			}
 		}
+        MenuItem pm = menu.findItem(R.id.pm);
+        if(pm != null){
+            pm.setEnabled(mPrefs.hasPlatinum);
+            pm.setVisible(mPrefs.hasPlatinum);
+        }
+
 	}
     
 	@Override
@@ -359,11 +363,14 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
             case R.id.go_to:
                 displayPagePicker();
                 return true;
+            case R.id.pm:
+            	startActivity(new Intent().setClass(getActivity(), PrivateMessageActivity.class));
+            	return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
-    
+	
     @Override
     public void onCreateContextMenu(ContextMenu aMenu, View aView, ContextMenuInfo aMenuInfo) {
         super.onCreateContextMenu(aMenu, aView, aMenuInfo);
@@ -371,8 +378,15 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
 	        android.view.MenuInflater inflater = getActivity().getMenuInflater();
 	        AdapterContextMenuInfo info = (AdapterContextMenuInfo) aMenuInfo;
 	        Cursor row = mCursorAdapter.getRow(info.id);
-            if(row != null && row.getColumnIndex(AwfulThread.BOOKMARKED)>-1) {
+            if(row != null && row.getInt(row.getColumnIndex(AwfulThread.BOOKMARKED))>-1) {
 	              inflater.inflate(R.menu.thread_longpress, aMenu);
+	              if(row.getInt(row.getColumnIndex(AwfulThread.BOOKMARKED))<1 || !mPrefs.coloredBookmarks){
+	            	  MenuItem bookmarkColor = aMenu.findItem(R.id.thread_bookmark_color);
+	            	  if(bookmarkColor != null){
+	            		  bookmarkColor.setEnabled(false);
+	            		  bookmarkColor.setVisible(false);
+	            	  }
+	              }
 	       }
         }
     }
@@ -393,6 +407,9 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
                 return true;
             case R.id.thread_bookmark:
             	toggleThreadBookmark((int)info.id, (mCursorAdapter.getInt(info.id, AwfulThread.BOOKMARKED)+1)%2>0);
+                return true;
+            case R.id.thread_bookmark_color:
+            	toggleBookmarkColor((int)info.id, (mCursorAdapter.getInt(info.id, AwfulThread.BOOKMARKED)));
                 return true;
             case R.id.copy_url_thread:
             	copyUrl((int) info.id);
@@ -605,7 +622,7 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
         queueRequest(new MarkUnreadRequest(getActivity(), id).build(this, new AwfulRequest.AwfulResultCallback<Void>() {
             @Override
             public void success(Void result) {
-                displayAlert(R.string.mark_unread_success);
+                displayAlert(R.string.mark_unread_success, 0, R.drawable.ic_menu_load_success);
                 refreshInfo();
             }
 
@@ -629,6 +646,37 @@ public class ForumDisplayFragment extends AwfulFragment implements AwfulUpdateCa
             @Override
             public void success(Void result) {
                 refreshInfo();
+            }
+
+            @Override
+            public void failure(VolleyError error) {
+                refreshInfo();
+            }
+        }));
+    }
+    
+	/** Toggle Bookmark color status.
+	 * @param id Thread ID
+	 */
+    private void toggleBookmarkColor(final int id, final int bookmarkStatus) {
+    	final ContentResolver cr = this.getAwfulApplication().getContentResolver();
+    	if(bookmarkStatus==3){
+    		queueRequest(new BookmarkColorRequest(getActivity(), id).build(this, new AwfulRequest.AwfulResultCallback<Void>() {
+
+				@Override
+				public void success(Void result) {}
+
+				@Override
+				public void failure(VolleyError error) {}
+    		}));
+    	}
+        queueRequest(new BookmarkColorRequest(getActivity(), id).build(this, new AwfulRequest.AwfulResultCallback<Void>() {
+            @Override
+            public void success(Void result) {
+            	ContentValues cv = new ContentValues();
+                cv.put(AwfulThread.BOOKMARKED, ((bookmarkStatus==3)?bookmarkStatus+2:bookmarkStatus+1)%4);
+                cr.update(AwfulThread.CONTENT_URI, cv, AwfulThread.ID+"=?", AwfulProvider.int2StrArray(id));
+            	refreshInfo();
             }
 
             @Override

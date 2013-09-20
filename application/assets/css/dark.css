@@ -66,6 +66,10 @@ article.op {
 background-color:#4A4D00;
 }
 
+article.marked {
+background-color:#400000;
+}
+
 article.self {
 background-color:#1A4000;
 }
@@ -122,9 +126,20 @@ font-style:italic;
 font-size: 0.7em;
 }
 
-section.postcontent .bbc-spoiler, section.postcontent .bbc-spoiler li, section.postcontent .bbc-spoiler a {
-color: #b0b0b0;
+section.postcontent .bbc-spoiler{
 background: #b0b0b0;
+}
+
+section.postcontent .bbc-spoiler * {
+visibility: hidden;
+}
+
+section.postcontent .bbc-spoiler.spoiled {
+background: transparent;
+}
+
+section.postcontent .bbc-spoiler.spoiled * {
+visibility: visible;
 }
 
 header {
